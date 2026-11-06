@@ -197,12 +197,16 @@ function eventsPanel(list) {
     const q = data.quote(x.symbol);
     if (q?.ed && !seen.has(x.symbol + 'ed')) { seen.add(x.symbol + 'ed'); items.push({ date: q.ed, s: x.symbol, t: x.ticker, what: 'Bilanço açıklaması', src: 'Yahoo' }); }
     if (q?.exd && !seen.has(x.symbol + 'exd')) { seen.add(x.symbol + 'exd'); items.push({ date: q.exd, s: x.symbol, t: x.ticker, what: 'Temettü hak kesimi', src: 'Yahoo' }); }
-    for (const e of x.events || []) if (e.date >= today) items.push({ date: e.date, s: x.symbol, t: x.ticker, what: e.label, src: p.title, mine: true });
+    for (const e of x.events || []) if (e.date >= today) items.push({ date: e.date, s: x.symbol, t: x.ticker, what: e.label, src: p.title, mine: true, acc: p.accent });
   }
   items.sort((a, b) => a.date.localeCompare(b.date));
   const panel = h('section.panel', { 'aria-label': 'Yaklaşan tarihler' },
     h('div.panel-head', h('h2', 'Yaklaşan tarihler'), h('span.sub', 'bilanço, temettü ve kendi eklediğin olaylar')));
-  const upcoming = items.filter((x) => x.date >= today).slice(0, 7);
+  // Kendi işaretlediğin tarihler (FDA kararı gibi) her zaman görünür; kalan yer bilanço ve temettüyle dolar
+  const future = items.filter((x) => x.date >= today);
+  const mine = future.filter((x) => x.mine).slice(0, 8);
+  const auto = future.filter((x) => !x.mine).slice(0, Math.max(3, 10 - mine.length));
+  const upcoming = [...mine, ...auto].sort((a, b) => a.date.localeCompare(b.date) || (b.mine ? 1 : 0) - (a.mine ? 1 : 0));
   if (!upcoming.length) {
     panel.appendChild(h('p.note', 'Yaklaşan bir tarih yok. Bir hissenin FDA kararı gibi önemli tarihlerini pozisyonu düzenlerken ekleyebilirsin.'));
     return panel;
@@ -211,9 +215,9 @@ function eventsPanel(list) {
   for (const e of upcoming) {
     const d = new Date(e.date + 'T00:00:00');
     const left = daysUntil(e.date);
-    ul.appendChild(h('li',
+    ul.appendChild(h('li', e.mine ? { class: 'mine', style: { '--acc': e.acc } } : null,
       h('div.event-date', h('b', String(d.getDate())), h('span', fmtDate(e.date, { year: false }).split(' ').slice(1).join(' '))),
-      h('div.event-what', h('a', { href: `#/s/${encodeURIComponent(e.s)}` }, e.t), h('div', e.what + (e.mine ? '' : ''))),
+      h('div.event-what', h('a', { href: `#/s/${encodeURIComponent(e.s)}` }, e.t), h('div', e.what)),
       h('span.event-in', left === 0 ? 'bugün' : left === 1 ? 'yarın' : `${left} gün`)));
   }
   panel.appendChild(ul);

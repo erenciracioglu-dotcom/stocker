@@ -72,6 +72,13 @@ export function renderStock(rawSym) {
         h('span', h('span.v', `${num(row.lots, row.lots % 1 ? 2 : 0)} lot · ${price(pos.entryPrice, p.currency)}`), ' ', h('span', { class: trend(row.pl) }, `${money(row.pl, p.currency, { sign: true })} (${pct(row.plPct)})`))));
     }
     view.appendChild(strip);
+    const evs = held.flatMap(({ pos }) => (pos.events || []).filter((e) => e.date >= todayISO())).sort((a, b) => a.date.localeCompare(b.date));
+    const notes = [...new Set(held.map(({ pos }) => pos.note).filter(Boolean))];
+    if (evs.length || notes.length) {
+      view.appendChild(h('div.callout.info', icon('calendar'), h('div.grow',
+        ...evs.map((e) => { const n = daysUntil(e.date); return h('div', h('b', fmtDate(e.date)), ` ${n === 0 ? 'bugün' : n === 1 ? 'yarın' : `${n} gün sonra`}: ${e.label}`); }),
+        ...notes.map((t) => h('div.hint', t)))));
+    }
     if (held.length > 1 && cost) {
       view.appendChild(h('p.note', `Toplam ${num(lots, lots % 1 ? 2 : 0)} lot, ortalama maliyet ${price(cost / lots, cur)}, değer ${money(value, cur)}, kâr/zarar `, h('span', { class: trend(value - cost) }, `${money(value - cost, cur, { sign: true })} (${pct(value / cost - 1)})`), '.'));
     }
@@ -162,7 +169,7 @@ export function renderStock(rawSym) {
       : chart.addSeries(LWC.AreaSeries, { lineColor: ink, topColor: alpha(ink, 0.08), bottomColor: alpha(ink, 0), lineWidth: 2, priceLineVisible: false, crosshairMarkerRadius: 4, priceFormat: { type: 'custom', formatter: fmt } });
     main.setData(ui.type === 'candle' ? bars.map(({ volume, ...b }) => b) : bars.map((b) => ({ time: b.time, value: b.close })));
     const hasVol = ui.pn.vol && bars.some((b) => b.volume > 0);
-    main.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: hasVol ? 0.24 : 0.08 } });
+    main.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: 0.06 } });
     if (intraday && ui.range === '1G' && isNum(q.pc)) main.createPriceLine({ price: q.pc, color: cssVar('--rule-strong'), lineWidth: 1, lineStyle: LWC.LineStyle.Solid, axisLabelVisible: true, title: 'önceki kapanış' });
 
     // hareketli ortalamalar ve Bollinger (yalnız günlük)
@@ -176,13 +183,15 @@ export function renderStock(rawSym) {
       if (ui.ov.sma200) line(ta.sma(d.c, 200), cssVar('--s3'));
       if (ui.ov.bb) { const bb = ta.bollinger(d.c); line(bb.upper, cssVar('--bench'), 1); line(bb.lower, cssVar('--bench'), 1); }
     }
-    // hacim (ana panelin altında)
-    if (hasVol) {
-      const vs = chart.addSeries(LWC.HistogramSeries, { priceScaleId: 'vol', priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false });
-      chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
-      vs.setData(bars.map((b, i) => ({ time: b.time, value: b.volume || 0, color: alpha(i && b.close < bars[i - 1].close ? down : up, 0.32) })));
-    }
     let pane = 1;
+    // hacim: kendi küçük panelinde (fiyat ekseni sıfırın altına uzamaz, etiketler çakışmaz)
+    if (hasVol) {
+      const vs = chart.addSeries(LWC.HistogramSeries, { priceFormat: { type: 'custom', formatter: (v) => compact(v) }, priceLineVisible: false, lastValueVisible: false }, pane);
+      vs.priceScale().applyOptions({ scaleMargins: { top: 0.15, bottom: 0 } });
+      vs.setData(bars.map((b, i) => ({ time: b.time, value: b.volume || 0, color: alpha(i && b.close < bars[i - 1].close ? down : up, 0.45) })));
+      chart.panes()[pane]?.setStretchFactor(0.16);
+      pane++;
+    }
     const closes = bars.map((b) => b.close);
     if (ui.pn.rsi) {
       const r = ta.rsi(closes);
