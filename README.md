@@ -65,6 +65,7 @@ python scripts/fetch_data.py --out data
 
 ## Lisanslar
 
+- Ziyaret sayacı: [GoatCounter](https://www.goatcounter.com/) (çerezsiz). Adresin `#` kısmı gönderilmez, sayfa başlığı sabit "Stocker" gider; defter verisi ve adları sayaca ulaşmaz.
 - Grafikler: [TradingView Lightweight Charts™](https://www.tradingview.com/lightweight-charts/) (Apache 2.0), `vendor/` altında.
 - Yazı tipi: Archivo (SIL Open Font License), `assets/fonts/` altında.
 - Veriler Yahoo Finance'ten yfinance ile alınır; gecikmeli ve hatalı olabilir. Yatırım tavsiyesi değildir.

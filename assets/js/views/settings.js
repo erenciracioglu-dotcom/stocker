@@ -90,6 +90,7 @@ export function renderSettings() {
     h('div.panel-head', h('h2', 'Hakkında')),
     h('p.note', 'Stocker defterlerini yalnız bu tarayıcıda (localStorage) tutar; sitede ya da GitHub\'da portföy verin durmaz. Tarayıcı verisini silersen defterler de gider, ara ara dışa aktarmak iyi olur.'),
     h('p.note', { style: { marginTop: '8px' } }, 'Fiyat ve temel veriler Yahoo Finance\'ten yfinance ile alınır; gecikmeli ve hatalı olabilir. Bu uygulama yatırım tavsiyesi vermez.'),
+    h('p.note', { style: { marginTop: '8px' } }, 'Ziyaret sayısı GoatCounter ile sayılır: çerez kullanılmaz, yalnız sayfa adresi (# sonrası hariç) gider; defter adları ve portföy verisi gönderilmez.'),
     h('p.note', { style: { marginTop: '8px' } }, 'Grafikler: ', h('a', { href: 'https://www.tradingview.com/', target: '_blank', rel: 'noopener' }, 'TradingView Lightweight Charts™'), '. Yazı tipi: Archivo (SIL OFL).'),
     h('div.setting-row', { style: { marginTop: '10px' } },
       h('div', h('div.t', 'Bu cihazdaki tüm defterleri sil'), h('div.d', `${list.length} defter silinir. Önce dışa aktarmayı unutma.`)),
