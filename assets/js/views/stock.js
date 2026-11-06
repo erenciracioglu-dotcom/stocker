@@ -147,7 +147,7 @@ export function renderStock(rawSym) {
     const intraday = ui.range === '1G' || ui.range === '5G';
     const d = ctx.daily;
     if (!d || !d.t.length) { box.appendChild(h('div.empty-chart', 'Fiyat geçmişi yükleniyor…')); return; }
-    if (intraday && !ctx.intra?.t?.length) { box.appendChild(h('div.empty-chart', 'Gün içi veri yalnız defterlerdeki hisseler ve endeksler için tutuluyor.')); retEl.textContent = ''; return; }
+    if (intraday && !ctx.intra?.t?.length) { box.appendChild(h('div.empty-chart', 'Gün içi veri şu an alınamadı; yenile tuşuyla yeniden dene.')); retEl.textContent = ''; return; }
     chart = createChart(box, { intraday, priceDigits: pd });
     const up = cssVar('--up'), down = cssVar('--down'), ink = cssVar('--ink');
     let bars;
@@ -260,13 +260,18 @@ export function renderStock(rawSym) {
   box.appendChild(h('div.empty-chart', 'Fiyat geçmişi yükleniyor…'));
   drawTabs();
 
+  // izleme listesindeki bir hisseye açılışta anlık fiyat alınmadıysa şimdi al; gelince sayfa yenilenir
+  if (!q.live) data.loadLive([sym]).then((r) => { if (r.ok && view.isConnected) window.dispatchEvent(new Event('stocker:rerender')); }).catch(() => {});
+
   (async () => {
-    const [hist, intra, fund] = await Promise.all([
+    const [hist, intra, fund, liveIntra] = await Promise.all([
       data.loadHistory(sym).catch(() => null),
       data.loadIntraday(sym).catch(() => null),
       q.fund ? data.loadFund(sym).catch(() => null) : Promise.resolve(null),
+      data.loadLiveBars(sym),
     ]);
-    ctx.hist = hist; ctx.intra = intra; ctx.fund = fund;
+    // gün içi grafik: aracıdan gelen güncel mumlar, alınamazsa kayıtlı olanlar
+    ctx.hist = hist; ctx.intra = liveIntra || intra; ctx.fund = fund;
     ctx.daily = hist ? mergeToday(hist, q) : null;
     const benchSym = cur === 'TRY' ? 'XU100.IS' : '^GSPC';
     if (sym !== benchSym) ctx.bench = await data.loadHistory(benchSym).then((b) => ({ sym: benchSym, ...mergeToday(b, data.quote(benchSym)) })).catch(() => null);

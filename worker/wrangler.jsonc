@@ -1,0 +1,9 @@
+{
+  // Stocker anlık fiyat aracısı (Cloudflare Worker, ücretsiz plan). Sayfa açılınca ve yenile tuşunda
+  // Yahoo Finance'ten o anki fiyatları alıp yalnız Stocker'ın adresine verir. Yayın: npx wrangler deploy
+  "name": "stocker-fiyat",
+  "main": "src/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "observability": { "enabled": false }
+}

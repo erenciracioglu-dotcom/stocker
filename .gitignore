@@ -5,3 +5,5 @@ __pycache__/
 .venv/
 venv/
 *.tmp
+worker/node_modules/
+.wrangler/

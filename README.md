@@ -17,13 +17,19 @@ Portföy defterlerini izlemek için tarayıcıda çalışan bir uygulama: canlı
 
 ## Veri nasıl geliyor
 
-Tarayıcıdan Yahoo Finance'e doğrudan erişim (CORS) kapalı olduğu için veriyi GitHub Actions toplar:
+Tarayıcıdan Yahoo Finance'e doğrudan erişim (CORS) kapalı olduğu için geçmişi ve temel verileri GitHub Actions toplar, anlık fiyatları da küçük bir aracı getirir.
 
 1. `.github/workflows/veri.yml` hafta içi borsa saatlerinde yarım saatte bir, ayrıca her push'ta çalışır.
 2. `scripts/fetch_data.py` (yfinance) `tickers.json`daki semboller için fiyatı, 10 yıllık günlük geçmişi, son 5 günün 15 dakikalık mumlarını ve temel verileri çeker.
 3. Sonuç `data` dalına kaydedilir (bir sonraki çalıştırma kaldığı yerden devam eder) ve siteyle birlikte Pages'e yayınlanır. Uygulama veriyi aynı adresten (`data/market.json`, `data/history/…`, `data/fund/…`) okur.
 
 Elle çalıştırmak için: **Actions › Veri ve yayın › Run workflow** (her şeyi baştan çekmek için "full" kutusunu işaretle).
+
+### Anlık fiyatlar
+
+Sayfa açılınca ve üst çubuktaki yenile tuşuna basılınca fiyatlar `worker/` klasöründeki Cloudflare Worker'dan (`https://stocker-fiyat.fragrush-rooms.workers.dev`) anlık alınır: defterlerdeki hisseler, karşılaştırma endeksleri, kurlar ve açık hisse sayfası. Worker yalnız Stocker'ın adresinden gelen isteklere cevap verir; Yahoo Finance'in grafik uç noktasından son fiyatı, önceki kapanışı, gün içi mumları ve seans dışı fiyatı okuyup döner, hiçbir şey saklamaz. Aracıya ulaşılamazsa uygulama kayıtlı veriyle çalışır ve üst çubukta verinin saatini gösterir. BIST fiyatları Yahoo'da 15 dakika gecikmelidir.
+
+Worker'ı yeniden yayınlamak için `worker/` içinde `npm install` ve `npx wrangler deploy` (Cloudflare girişi gerekir).
 
 ### Yeni hisse eklemek
 

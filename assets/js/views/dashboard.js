@@ -54,7 +54,7 @@ export function renderDashboard() {
       delta('Günlük', money(t.dayChg, cur, { sign: true }), pct(t.dayPct), trend(t.dayChg)),
       delta('Toplam kâr/zarar', money(t.pl, cur, { sign: true }), pct(t.plPct), trend(t.pl)),
       delta('Maliyet', money(t.cost, cur), null, 'flat')),
-    usdtry ? h('div.hint', `${counted.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Günlük değişim her hissenin son seansına göredir; ABD piyasası kapalıyken dünkü seans görünür. Fiyatlar Yahoo Finance'ten, yarım saatte bir güncellenir; BIST verisi 15 dk gecikmelidir.`) : null,
+    usdtry ? h('div.hint', `${counted.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Günlük değişim her hissenin son seansına göredir; ABD piyasası kapalıyken dünkü seans görünür. Fiyatlar sayfa açılınca ve yenile tuşuyla Yahoo Finance'ten anlık alınır; BIST verisi 15 dk gecikmelidir.`) : null,
   );
 
   const chartBox = h('div.chart-box');

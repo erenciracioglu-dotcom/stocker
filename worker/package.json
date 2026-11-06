@@ -1,0 +1,14 @@
+{
+  "name": "stocker-fiyat",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Stocker anlık fiyat aracısı (Cloudflare Worker): Yahoo Finance fiyatlarını Stocker sayfasına verir",
+  "scripts": {
+    "dev": "wrangler dev --port 8788",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}

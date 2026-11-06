@@ -64,20 +64,49 @@ function updateStamp() {
   const m = data.getMarket();
   const el = document.getElementById('updated');
   if (!el) return;
-  fill(el, m?.generated ? h('span', { title: new Date(m.generated).toLocaleString('tr-TR') }, 'Veri ', h('b', fmtTime(m.generated)), ` · ${ago(m.generated)}`) : '');
+  const live = data.liveTime();
+  const saved = m?.generated ? new Date(m.generated).toLocaleString('tr-TR') : '—';
+  if (live) {
+    fill(el, h('span', { title: `Fiyatlar ${fmtTime(live)} itibarıyla Yahoo Finance'ten anlık alındı (BIST 15 dk gecikmeli). Grafik geçmişi ve temel veriler: ${saved}.` },
+      'Fiyat ', h('b', fmtTime(live)), ` · ${ago(live)}`));
+  } else {
+    fill(el, m?.generated ? h('span', { title: `Son kayıtlı veri: ${saved}. Anlık fiyat alınamadı; yenile tuşu yeniden dener.` },
+      'Veri ', h('b', fmtTime(m.generated)), ` · ${ago(m.generated)}`) : '');
+  }
 }
 
-async function refresh({ force = true, announce = false } = {}) {
+const FX_PAIRS = ['USDTRY=X', 'EURTRY=X', 'EURUSD=X'];
+
+/** Anlık fiyatı alınacak semboller: defterlerdekiler, karşılaştırma endeksleri, kurlar ve açık hisse sayfası. */
+function liveSymbols() {
+  const quotes = data.getMarket()?.quotes || {};
+  const held = store.list().flatMap((p) => p.positions.map((x) => x.symbol));
+  const bench = Object.keys(quotes).filter((s) => quotes[s].g === 'B');
+  const [path] = (location.hash.replace(/^#/, '') || '/').split('?');
+  const parts = path.split('/').filter(Boolean);
+  const page = parts[0] === 's' && parts[1] ? decodeURIComponent(parts.slice(1).join('/')).toUpperCase() : null;
+  return [...new Set([...held, ...bench, ...FX_PAIRS, page])].filter((s) => s && quotes[s]);
+}
+
+/** live: yenile tuşu ve sayfa açılışı gibi kullanıcının istediği anlarda anlık fiyatlar da alınır. */
+async function refresh({ force = true, announce = false, live = false } = {}) {
   const btn = document.getElementById('refresh');
   btn?.classList.add('spin');
   try {
     const before = data.getMarket()?.generated;
-    await data.loadMarket({ force });
+    let marketErr = null;
+    try { await data.loadMarket({ force }); } catch (e) { marketErr = e; }
+    let got = null;
+    if (live && data.getMarket()) {
+      data.resetLiveBars();
+      got = await data.loadLive(liveSymbols()).catch(() => ({ ok: 0, fail: 1 }));
+    }
     updateStamp();
-    if (data.getMarket()?.generated !== before) render({ keepScroll: true });
-    else if (announce) toast('Veri güncel; bir sonraki güncelleme yarım saat içinde');
-  } catch (e) {
-    if (announce) toast('Veri alınamadı. İnternet bağlantını kontrol et.', { kind: 'error' });
+    if (got?.ok || data.getMarket()?.generated !== before) render({ keepScroll: true });
+    if (!announce) return;
+    if (got?.ok) toast(`Fiyatlar güncellendi · ${fmtTime(data.liveTime())}${got.fail ? ` (${got.fail} sembol alınamadı)` : ''}`);
+    else if (!data.getMarket() || (marketErr && !live)) toast('Veri alınamadı. İnternet bağlantını kontrol et.', { kind: 'error' });
+    else toast('Anlık fiyat alınamadı; son kayıtlı veri gösteriliyor.', { kind: 'error' });
   } finally {
     btn?.classList.remove('spin');
   }
@@ -132,7 +161,7 @@ function setupHeader() {
   document.getElementById('search-icon')?.replaceWith(icon('search', 17));
   document.getElementById('refresh').replaceChildren(icon('refresh'));
   document.getElementById('settings-link').replaceChildren(icon('settings'));
-  document.getElementById('refresh').addEventListener('click', () => refresh({ announce: true }));
+  document.getElementById('refresh').addEventListener('click', () => refresh({ announce: true, live: true }));
   document.getElementById('theme').addEventListener('click', () => {
     store.setSetting('theme', isDark() ? 'light' : 'dark');
     applyTheme();
@@ -161,6 +190,12 @@ async function boot() {
     toast('Piyasa verisine ulaşılamadı; defterler maliyet değeriyle gösteriliyor.', { kind: 'error', ms: 6000 });
   }
   try { await seedDemoIfNeeded(); } catch (e) { console.warn('Örnek defter kurulamadı', e); }
+  // Açılışta anlık fiyatları bekle (en çok 2,5 sn); gecikirse kayıtlı veriyle aç, gelince yenile.
+  if (data.getMarket()) {
+    const live = data.loadLive(liveSymbols()).catch(() => ({ ok: 0 }));
+    const first = await Promise.race([live, new Promise((r) => setTimeout(() => r(null), 2500))]);
+    if (!first) live.then((r) => { if (r?.ok) { updateStamp(); render({ keepScroll: true }); } });
+  }
   updateStamp();
   render();
   window.addEventListener('hashchange', () => render());
