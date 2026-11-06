@@ -19,7 +19,7 @@ Portföy defterlerini izlemek için tarayıcıda çalışan bir uygulama: canlı
 
 Tarayıcıdan Yahoo Finance'e doğrudan erişim (CORS) kapalı olduğu için geçmişi ve temel verileri GitHub Actions toplar, anlık fiyatları da küçük bir aracı getirir.
 
-1. `.github/workflows/veri.yml` hafta içi borsa saatlerinde yarım saatte bir, ayrıca her push'ta çalışır.
+1. `.github/workflows/veri.yml` her push'ta çalışır; ayrıca hafta içi BIST kapanışından sonra (18:30) ve ABD kapanışından sonra (00:25) Cloudflare'deki Worker başlatır. İş akışındaki kendi yarım saatlik zamanlaması da duruyor, ama GitHub bu depoda zamanlanmış çalıştırmaları başlatmıyor.
 2. `scripts/fetch_data.py` (yfinance) `tickers.json`daki semboller için fiyatı, 10 yıllık günlük geçmişi, son 5 günün 15 dakikalık mumlarını ve temel verileri çeker.
 3. Sonuç `data` dalına kaydedilir (bir sonraki çalıştırma kaldığı yerden devam eder) ve siteyle birlikte Pages'e yayınlanır. Uygulama veriyi aynı adresten (`data/market.json`, `data/history/…`, `data/fund/…`) okur.
 
@@ -28,6 +28,8 @@ Elle çalıştırmak için: **Actions › Veri ve yayın › Run workflow** (her
 ### Anlık fiyatlar
 
 Sayfa açılınca ve üst çubuktaki yenile tuşuna basılınca fiyatlar `worker/` klasöründeki Cloudflare Worker'dan (`https://stocker-fiyat.fragrush-rooms.workers.dev`) anlık alınır: defterlerdeki hisseler, karşılaştırma endeksleri, kurlar ve açık hisse sayfası. Worker yalnız Stocker'ın adresinden gelen isteklere cevap verir; Yahoo Finance'in grafik uç noktasından son fiyatı, önceki kapanışı, gün içi mumları ve seans dışı fiyatı okuyup döner, hiçbir şey saklamaz. Aracıya ulaşılamazsa uygulama kayıtlı veriyle çalışır ve üst çubukta verinin saatini gösterir. BIST fiyatları Yahoo'da 15 dakika gecikmelidir.
+
+Aynı Worker'ın zamanlayıcısı (`worker/wrangler.jsonc` › `triggers`) hafta içi iki kez GitHub'daki veri işini başlatır. Bunun için Worker'da `GH_TOKEN` gizli değişkeni olarak yalnız bu depoda **Actions: Read and write** izni olan ince ayarlı bir GitHub anahtarı durur (`npx wrangler secret put GH_TOKEN`); anahtar yoksa zamanlayıcı bir şey yapmaz.
 
 Worker'ı yeniden yayınlamak için `worker/` içinde `npm install` ve `npx wrangler deploy` (Cloudflare girişi gerekir).
 

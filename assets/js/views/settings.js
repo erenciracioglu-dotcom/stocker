@@ -59,7 +59,7 @@ export function renderSettings() {
   const dataPanel = h('section.panel', { 'aria-label': 'Veri' },
     h('div.panel-head', h('h2', 'Piyasa verisi')),
     h('div.setting-row',
-      h('div', h('div.t', 'Son güncelleme'), h('div.d', market ? `Anlık fiyatlar: ${data.liveTime() ? `${fmtDateTime(data.liveTime())} (${ago(data.liveTime())})` : 'alınamadı'}; sayfa açılınca ve yenile tuşunda Cloudflare'deki küçük bir aracı üzerinden Yahoo Finance'ten gelir. Kayıtlı veri (grafik geçmişi, temel veriler): ${fmtDateTime(market.generated)} (${ago(market.generated)}), ${Object.keys(market.quotes || {}).length} sembol; GitHub Actions hafta içi borsa saatlerinde yarım saatte bir çalışacak şekilde ayarlı.${errCount ? ` Son çalıştırmada ${errCount} uyarı var.` : ''}` : 'Veri yüklenemedi.')),
+      h('div', h('div.t', 'Son güncelleme'), h('div.d', market ? `Anlık fiyatlar: ${data.liveTime() ? `${fmtDateTime(data.liveTime())} (${ago(data.liveTime())})` : 'alınamadı'}; sayfa açılınca ve yenile tuşunda Cloudflare'deki küçük bir aracı üzerinden Yahoo Finance'ten gelir. Kayıtlı veri (grafik geçmişi, temel veriler): ${fmtDateTime(market.generated)} (${ago(market.generated)}), ${Object.keys(market.quotes || {}).length} sembol; hafta içi BIST ve ABD kapanışlarından sonra yenilenir.${errCount ? ` Son çalıştırmada ${errCount} uyarı var.` : ''}` : 'Veri yüklenemedi.')),
       h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
         h('button.btn', { type: 'button', onclick: () => document.getElementById('refresh')?.click() }, icon('refresh', 16), 'Yenile'),
         h('a.btn.quiet', { href: `https://github.com/${owner}/${repo}/actions`, target: '_blank', rel: 'noopener' }, 'Çalıştırmalar'))),

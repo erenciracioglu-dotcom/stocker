@@ -5,5 +5,8 @@
   "main": "src/index.js",
   "compatibility_date": "2026-10-01",
   "workers_dev": true,
-  "observability": { "enabled": false }
+  "observability": { "enabled": false },
+  // Saatler UTC. Hafta içi kayıtlı veriyi tazeleyen GitHub iş akışını başlatır (GH_TOKEN gizli değişkeniyle):
+  // BIST kapanışından sonra (18:30 TR) ve ABD kapanışından sonra (00:25 TR; ABD kışın 00:00'da, yazın 23:00'te kapanır)
+  "triggers": { "crons": ["30 15 * * mon-fri", "25 21 * * mon-fri"] }
 }

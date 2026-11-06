@@ -11,6 +11,11 @@
 //   p son fiyat (normal seans), pc önceki seansın kapanışı, t fiyatın zamanı (epoch sn), d seans günü (borsa saatiyle),
 //   o/h/l/v seansın açılış/yüksek/düşük/hacmi, ms piyasa durumu (PRE/REGULAR/POST/CLOSED),
 //   xs/xp/xt seans dışı fiyat (PRE ya da POST), fiyatı ve zamanı.
+//
+// Zamanlayıcı (wrangler.jsonc > triggers): GitHub'ın kendi zamanlayıcısı bu depoda çalışmadığı için kayıtlı veriyi
+// (grafik geçmişi, temel veriler) tazeleyen GitHub iş akışını hafta içi BIST ve ABD kapanışlarından sonra buradan
+// başlatır. GH_TOKEN gizli değişkeni: yalnız stocker deposunda "Actions: Read and write" izni olan ince ayarlı anahtar
+// (npx wrangler secret put GH_TOKEN). Anahtar yoksa zamanlayıcı hiçbir şey yapmaz.
 
 const ALLOWED = ['https://erenciracioglu-dotcom.github.io', 'http://127.0.0.1:*', 'http://localhost:*'];
 const SYMBOL = /^[A-Za-z0-9.^=\-]{1,20}$/;
@@ -52,7 +57,32 @@ export default {
     }
     return json({ error: 'bilinmeyen yol' }, 404, cors);
   },
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(startDataJob(env, controller.cron));
+  },
 };
+
+// ---------------------------------------------------------------- günlük veri işi
+
+const REPO = 'erenciracioglu-dotcom/stocker';
+const WORKFLOW = 'veri.yml';
+
+async function startDataJob(env, cron) {
+  if (!env.GH_TOKEN) { console.log('GH_TOKEN tanımlı değil; veri işi başlatılmadı'); return; }
+  const res = await fetch(`https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${env.GH_TOKEN}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': 'stocker-fiyat',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ ref: 'main' }),
+  });
+  console.log(`veri işi (${cron}): GitHub ${res.status}`);
+}
 
 // ---------------------------------------------------------------- fiyat
 
