@@ -382,6 +382,44 @@ def session_today(intra, tz, reg):
     }
 
 
+def fill_gaps(hist, intra):
+    """Yahoo'nun günlük serisinde (özellikle BIST'te) ara ara eksik kalan günleri gün içi mumlardan tamamlar."""
+    if not hist or not hist.get("t") or not intra or not intra.get("t"):
+        return False
+    m = {**(hist.get("m") or {}), **(intra.get("m") or {})}
+    tz, reg = m.get("tz") or "UTC", m.get("reg")
+    rs = re_ = None
+    if reg:
+        rs, re_ = tod_minutes(reg[0], tz), tod_minutes(reg[1], tz)
+    days = {}
+    for i, ts in enumerate(intra["t"]):
+        if intra["c"][i] is None:
+            continue
+        if rs is not None:
+            mm = tod_minutes(ts, tz)
+            if mm < rs or mm >= re_:
+                continue
+        days.setdefault(local_date(ts, tz), []).append(i)
+    have = set(hist["t"])
+    last = hist["t"][-1]
+    added = False
+    for d, rows in sorted(days.items()):
+        if d in have or d > last or d < hist["t"][0]:
+            continue  # yalnız aradaki boşluklar; bugünün mumu ayrıca ele alınır
+        bar = {
+            "o": intra["o"][rows[0]], "c": intra["c"][rows[-1]],
+            "h": max(intra["h"][i] for i in rows if intra["h"][i] is not None),
+            "l": min(intra["l"][i] for i in rows if intra["l"][i] is not None),
+            "v": sum(intra["v"][i] or 0 for i in rows),
+        }
+        k = sum(1 for x in hist["t"] if x < d)
+        hist["t"].insert(k, d)
+        for key in "ohlcv":
+            hist[key].insert(k, bar[key])
+        added = True
+    return added
+
+
 def build_quote(sym, group, hist, intra, now_ts):
     t, c = hist.get("t") or [], hist.get("c") or []
     if not c:
@@ -735,6 +773,11 @@ def main():
         it = intra.get(sym)
         if not it and g in ("P", "B"):
             it = load_json(out / "intraday" / f"{safe_name(sym)}.json")
+        try:
+            if it and fill_gaps(h, it):
+                save_json(out / "history" / f"{safe_name(sym)}.json", h)
+        except Exception as e:
+            errors[sym + ":gaps"] = f"{type(e).__name__}: {str(e)[:120]}"
         try:
             q = build_quote(sym, g, h, it, now_ts)
         except Exception as e:
