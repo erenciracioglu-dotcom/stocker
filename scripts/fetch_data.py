@@ -159,7 +159,7 @@ def load_universe(path: Path):
         return out
 
     groups = {}
-    for g, key in (("P", "portfolio"), ("B", "benchmarks"), ("W", "watch")):
+    for g, key in (("P", "portfolio"), ("P", "demo"), ("B", "benchmarks"), ("W", "watch")):
         for s in norm(cfg.get(key)):
             groups.setdefault(s, g)  # ilk görülen grup kazanır (P > B > W)
     return groups, norm(cfg.get("benchmarks"))

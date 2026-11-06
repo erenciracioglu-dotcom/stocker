@@ -1,5 +1,5 @@
 {
-  "_aciklama": "Veri toplayicinin izledigi semboller (Yahoo Finance kodlari). portfolio: her calistirmada tazelenir; benchmarks: endeks, kur ve karsilastirma; watch: arama ve hizli ekleme icin hazir veri (uc saatte bir). Yeni hisse eklemek icin ilgili listeye yazman yeterli; BIST hisseleri .IS ile biter.",
+  "_aciklama": "Veri toplayicinin izledigi semboller (Yahoo Finance kodlari). portfolio: her calistirmada tazelenir; benchmarks: endeks, kur ve karsilastirma; demo: ilk acilista gorunen ornek defterin hisseleri (portfolio gibi tazelenir); watch: arama ve hizli ekleme icin hazir veri (uc saatte bir). Yeni hisse eklemek icin ilgili listeye yazman yeterli; BIST hisseleri .IS ile biter.",
   "portfolio": [
     "PYPD", "SVRA", "CAPR", "GOSS", "VNDA", "IMUX",
     "RXRX", "MRNA", "BNTX", "BEAM", "NTRA", "NTLA",
@@ -8,11 +8,12 @@
     "GARAN.IS", "AKBNK.IS", "YKBNK.IS", "ISCTR.IS", "EKGYO.IS", "TRGYO.IS",
     "ISGYO.IS", "CIMSA.IS", "OYAKC.IS", "EREGL.IS", "FROTO.IS", "ISFIN.IS"
   ],
+  "demo": ["THYAO.IS", "ASELS.IS", "ALARK.IS"],
   "benchmarks": ["^GSPC", "^IXIC", "XU100.IS", "XBI", "USDTRY=X", "EURTRY=X", "GC=F"],
   "watch": [
-    "THYAO.IS", "ASELS.IS", "KCHOL.IS", "SAHOL.IS", "BIMAS.IS", "TUPRS.IS", "SISE.IS", "PGSUS.IS",
+    "KCHOL.IS", "SAHOL.IS", "BIMAS.IS", "TUPRS.IS", "SISE.IS", "PGSUS.IS",
     "TCELL.IS", "TTKOM.IS", "ENKAI.IS", "TOASO.IS", "SASA.IS", "ARCLK.IS", "MGROS.IS", "TAVHL.IS",
-    "ALARK.IS", "ASTOR.IS", "KRDMD.IS", "PETKM.IS", "HALKB.IS", "VAKBN.IS", "AEFES.IS", "ULKER.IS",
+    "ASTOR.IS", "KRDMD.IS", "PETKM.IS", "HALKB.IS", "VAKBN.IS", "AEFES.IS", "ULKER.IS",
     "AAPL", "MSFT", "AMZN", "GOOGL", "META", "TSLA", "AVGO", "AMD", "TSM", "ASML",
     "MU", "INTC", "ORCL", "NFLX", "COIN", "MSTR", "HOOD", "IONQ", "SMCI", "ARM",
     "LLY", "NVO", "AMGN", "VRTX", "REGN", "GILD", "BIIB", "CRSP", "ALNY", "SRPT",
