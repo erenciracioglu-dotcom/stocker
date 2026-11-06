@@ -227,6 +227,18 @@ def split_suspect(old, new) -> bool:
     return abs(med - 1) > 0.03
 
 
+def to_epoch(x):
+    """yfinance 1.x zamanları pandas Timestamp olarak verir; eski sürümler epoch saniye."""
+    if x is None or isinstance(x, bool):
+        return None
+    if isinstance(x, (int, float)):
+        return int(x)
+    try:
+        return int(pd.Timestamp(x).timestamp())
+    except Exception:
+        return None
+
+
 def pick_meta(md: dict) -> dict:
     if not md:
         return {}
@@ -234,8 +246,10 @@ def pick_meta(md: dict) -> dict:
 
     def per(k):
         p = ctp.get(k) or {}
-        if isinstance(p, dict) and p.get("start") and p.get("end"):
-            return [int(p["start"]), int(p["end"])]
+        if isinstance(p, dict):
+            s, e = to_epoch(p.get("start")), to_epoch(p.get("end"))
+            if s and e:
+                return [s, e]
         return None
 
     out = {
@@ -245,7 +259,8 @@ def pick_meta(md: dict) -> dict:
         "ty": md.get("instrumentType"),
         "tz": md.get("exchangeTimezoneName"),
         "rmp": pr(md.get("regularMarketPrice")),
-        "rmt": md.get("regularMarketTime"),
+        "rmt": to_epoch(md.get("regularMarketTime")),
+        "pcl": pr(md.get("previousClose")),
         "h52": pr(md.get("fiftyTwoWeekHigh")),
         "l52": pr(md.get("fiftyTwoWeekLow")),
         "pre": per("pre"),
@@ -346,13 +361,15 @@ def build_quote(sym, group, hist, intra, now_ts):
     i = len(c) - 1
     p, pc = c[i], (c[i - 1] if i > 0 else None)
     o, h, l, v, d = hist["o"][i], hist["h"][i], hist["l"][i], hist["v"][i], t[i]
-    rmp, rmt = m.get("rmp"), m.get("rmt")
+    rmp, rmt, pcl = m.get("rmp"), m.get("rmt"), m.get("pcl")
     if rmp and rmt:
         rd = local_date(rmt, tz)
         if rd and rd == d:
             p = rmp
+            if pcl:
+                pc = pcl
         elif rd and rd > d:  # yeni seansın günlük mumu henüz oluşmamış
-            pc, p, d = c[i], rmp, rd
+            pc, p, d = (pcl or c[i]), rmp, rd
             o = h = l = None
             v = 0
     q = {
@@ -390,6 +407,39 @@ def build_quote(sym, group, hist, intra, now_ts):
             pass
     q["sp"] = {"t": t[-SPARK_DAYS:], "c": c[-SPARK_DAYS:]}
     return {k: v for k, v in q.items() if v is not None}
+
+
+def enrich(q, sym, out: Path, today: str):
+    """Temel veri dosyasından sektör, piyasa değeri ve yaklaşan tarihleri market.json'a taşır."""
+    rec = load_json(out / "fund" / f"{safe_name(sym)}.json")
+    q["fund"] = bool(rec)
+    if not rec:
+        return
+    prof, st, cal = rec.get("profile") or {}, rec.get("stats") or {}, rec.get("cal") or {}
+    sec = prof.get("sectorDisp") or prof.get("sector")
+    ind = prof.get("industryDisp") or prof.get("industry")
+    if sec:
+        q["sec"] = sec
+    if ind:
+        q["ind"] = ind
+    mc = num(st.get("marketCap"))
+    if not mc and num(st.get("sharesOutstanding")) and q.get("p"):
+        mc = st["sharesOutstanding"] * q["p"]
+    if mc:
+        q["mc"] = round(mc)
+    eds = cal.get("Earnings Date") or []
+    if isinstance(eds, str):
+        eds = [eds]
+    fut = sorted(d[:10] for d in eds if isinstance(d, str) and d[:10] >= today)
+    if not fut and num(st.get("earningsTimestamp")):
+        d = dt.datetime.fromtimestamp(int(st["earningsTimestamp"]), UTC).strftime("%Y-%m-%d")
+        if d >= today:
+            fut = [d]
+    if fut:
+        q["ed"] = fut[0]
+    exd = cal.get("Ex-Dividend Date")
+    if isinstance(exd, str) and exd[:10] >= today:
+        q["exd"] = exd[:10]
 
 
 # ---------------------------------------------------------------- temel veriler
@@ -583,6 +633,7 @@ def main():
         groups = {s: groups.get(s, "P") for s in wanted}
     started = now()
     now_ts = int(started.timestamp())
+    today = started.strftime("%Y-%m-%d")
     stats = {"full": 0, "daily": 0, "intra": 0, "fund": 0}
     errors = {}
     hist, intra = {}, {}
@@ -638,8 +689,7 @@ def main():
             errors[sym + ":quote"] = f"{type(e).__name__}: {str(e)[:120]}"
             q = None
         if q:
-            fpath = out / "fund" / f"{safe_name(sym)}.json"
-            q["fund"] = fpath.exists()
+            enrich(q, sym, out, today)
             quotes[sym] = q
     if args.only and old_market.get("quotes"):  # test çalıştırmasında diğer sembolleri koru
         merged = dict(old_market["quotes"])
@@ -688,7 +738,8 @@ def main():
                 errors[sym + ":fund"] = f"{type(e).__name__}: {str(e)[:160]}"
             time.sleep(0.3 + random.random() * 0.3)
         for sym in quotes:
-            quotes[sym]["fund"] = (out / "fund" / f"{safe_name(sym)}.json").exists()
+            if sym in groups:
+                enrich(quotes[sym], sym, out, today)
         market["errors"] = errors
         market["generated"] = iso(now())
         save_json(out / "market.json", market)
