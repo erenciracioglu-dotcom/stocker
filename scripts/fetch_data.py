@@ -405,7 +405,10 @@ def build_quote(sym, group, hist, intra, now_ts):
                 q.update({"xs": xs, "xp": lc, "xt": lt})
         except Exception:
             pass
-    q["sp"] = {"t": t[-SPARK_DAYS:], "c": c[-SPARK_DAYS:]}
+    if group in ("P", "B"):
+        q["sp"] = {"t": t[-SPARK_DAYS:], "c": c[-SPARK_DAYS:]}
+    else:  # izleme listesi: yalnız küçük çizgi grafik için son 30 kapanış
+        q["sp"] = {"c": c[-30:]}
     return {k: v for k, v in q.items() if v is not None}
 
 
