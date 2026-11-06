@@ -4,6 +4,8 @@ Portföy defterlerini izlemek için tarayıcıda çalışan bir uygulama: canlı
 
 **Canlı:** https://erenciracioglu-dotcom.github.io/stocker/
 
+![Stocker hisse sayfası: mum grafik, ortalamalar, hacim ve RSI](docs/ekran-goruntusu.png)
+
 ## Neler var
 
 - **Genel bakış:** tüm defterlerin TL ya da USD karşılığı toplamı, günlük ve toplam kâr/zarar, toplam kâr/zararın günlük seyri, BIST ve ABD seans durumu, son seansın en çok hareket eden hisseleri, yaklaşan bilanço ve temettü tarihleri ile kendi eklediğin olaylar (ör. FDA kararı).

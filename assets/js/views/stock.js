@@ -161,6 +161,8 @@ export function renderStock(rawSym) {
       ? chart.addSeries(LWC.CandlestickSeries, { upColor: up, downColor: down, wickUpColor: up, wickDownColor: down, borderVisible: false, priceLineVisible: false, priceFormat: { type: 'custom', formatter: fmt } })
       : chart.addSeries(LWC.AreaSeries, { lineColor: ink, topColor: alpha(ink, 0.08), bottomColor: alpha(ink, 0), lineWidth: 2, priceLineVisible: false, crosshairMarkerRadius: 4, priceFormat: { type: 'custom', formatter: fmt } });
     main.setData(ui.type === 'candle' ? bars.map(({ volume, ...b }) => b) : bars.map((b) => ({ time: b.time, value: b.close })));
+    const hasVol = ui.pn.vol && bars.some((b) => b.volume > 0);
+    main.priceScale().applyOptions({ scaleMargins: { top: 0.1, bottom: hasVol ? 0.24 : 0.08 } });
     if (intraday && ui.range === '1G' && isNum(q.pc)) main.createPriceLine({ price: q.pc, color: cssVar('--rule-strong'), lineWidth: 1, lineStyle: LWC.LineStyle.Solid, axisLabelVisible: true, title: 'önceki kapanış' });
 
     // hareketli ortalamalar ve Bollinger (yalnız günlük)
@@ -175,7 +177,7 @@ export function renderStock(rawSym) {
       if (ui.ov.bb) { const bb = ta.bollinger(d.c); line(bb.upper, cssVar('--bench'), 1); line(bb.lower, cssVar('--bench'), 1); }
     }
     // hacim (ana panelin altında)
-    if (ui.pn.vol && bars.some((b) => b.volume > 0)) {
+    if (hasVol) {
       const vs = chart.addSeries(LWC.HistogramSeries, { priceScaleId: 'vol', priceFormat: { type: 'volume' }, priceLineVisible: false, lastValueVisible: false });
       chart.priceScale('vol').applyOptions({ scaleMargins: { top: 0.82, bottom: 0 } });
       vs.setData(bars.map((b, i) => ({ time: b.time, value: b.volume || 0, color: alpha(i && b.close < bars[i - 1].close ? down : up, 0.32) })));
