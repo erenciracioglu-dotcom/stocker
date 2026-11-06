@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Stocker</title>
+  <meta name="description" content="Stocker: portföy defterleri, hisse detayları, teknik ve temel analiz. Veriler tarayıcında kalır.">
+  <meta name="theme-color" content="#e9edee">
+  <meta name="color-scheme" content="light dark">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="preload" href="assets/fonts/archivo-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="assets/app.css">
+  <script>
+    // Açılışta yanlış temanın parlamaması için temayı hemen uygula
+    try {
+      var s = JSON.parse(localStorage.getItem('stocker.v1.settings') || '{}');
+      var t = s.theme || 'system';
+      var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-in">
+      <a class="brand" href="#/" aria-label="Stocker, genel bakış"><span class="brand-mark" aria-hidden="true"></span><span class="brand-word">Stocker</span></a>
+      <div class="search" role="search">
+        <span id="search-icon"></span>
+        <input id="q" type="search" placeholder="Hisse ya da defter ara" autocomplete="off" spellcheck="false"
+               aria-label="Hisse ya da defter ara" aria-controls="suggest" aria-expanded="false" aria-autocomplete="list">
+        <kbd aria-hidden="true">/</kbd>
+        <ul id="suggest" class="suggest" role="listbox" hidden></ul>
+      </div>
+      <div class="top-actions">
+        <span class="updated" id="updated" aria-live="polite"></span>
+        <button class="icon-btn" id="refresh" type="button" aria-label="Veriyi yenile"></button>
+        <button class="icon-btn" id="theme" type="button" aria-label="Temayı değiştir"></button>
+        <a class="icon-btn" id="settings-link" href="#/ayarlar" aria-label="Ayarlar ve taşıma"></a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <p class="skeleton">Defterler açılıyor…</p>
+  </main>
+
+  <footer class="footer">
+    <span>Stocker portföyünü yalnız bu tarayıcıda saklar.</span>
+    <span>Veriler Yahoo Finance'ten, gecikmeli.</span>
+    <span>Grafikler <a href="https://www.tradingview.com/" target="_blank" rel="noopener">TradingView Lightweight Charts™</a>.</span>
+    <span>Yatırım tavsiyesi değildir.</span>
+    <a href="https://github.com/erenciracioglu-dotcom/stocker" target="_blank" rel="noopener">Kaynak kodu</a>
+  </footer>
+
+  <noscript><p style="padding:20px">Stocker JavaScript gerektirir.</p></noscript>
+  <script src="vendor/lightweight-charts.standalone.production.js"></script>
+  <script type="module" src="assets/js/app.js"></script>
+</body>
+</html>

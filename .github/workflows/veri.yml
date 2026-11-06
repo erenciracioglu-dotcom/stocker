@@ -1,0 +1,91 @@
+name: Veri ve yayın
+
+# Yahoo Finance verisini çeker, "data" dalına kaydeder ve siteyi Pages'e yayınlar.
+# Saatler UTC: hafta içi BIST (07:00-15:10) ve ABD (seans öncesi 09:00 - seans sonrası 01:00).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full:
+        description: "Geçmişi ve temel verileri baştan çek"
+        type: boolean
+        default: false
+  schedule:
+    - cron: "7,37 6-22 * * 1-5"
+    - cron: "17 1 * * 2-6"
+    - cron: "23 10 * * 0"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: stocker-veri
+  cancel-in-progress: false
+
+jobs:
+  veri:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Bağımlılıklar
+        run: pip install -r scripts/requirements.txt
+
+      - name: Önceki veriyi al
+        run: |
+          git clone --depth 1 --branch data "https://github.com/${GITHUB_REPOSITORY}.git" _data || mkdir -p _data
+          rm -rf _data/.git
+
+      - name: Veriyi güncelle
+        id: fetch
+        continue-on-error: true
+        run: |
+          if [ "${{ inputs.full }}" = "true" ]; then
+            python scripts/fetch_data.py --out _data --full --fund-limit 200
+          else
+            python scripts/fetch_data.py --out _data
+          fi
+
+      - name: Veri dalını kaydet
+        if: steps.fetch.outcome == 'success'
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd _data
+          git init -q -b data
+          git add -A
+          git -c user.name="github-actions[bot]" -c user.email="41898297+github-actions[bot]@users.noreply.github.com" \
+            commit -q -m "Veri $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push -q -f "https://x-access-token:${TOKEN}@github.com/${GITHUB_REPOSITORY}.git" data
+          rm -rf .git
+
+      - name: Siteyi hazırla
+        run: |
+          mkdir -p _site
+          cp -r index.html manifest.webmanifest assets vendor _site/
+          cp -r _data _site/data
+          du -sh _site _site/data
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+
+  yayin:
+    needs: veri
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
