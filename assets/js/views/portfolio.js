@@ -1,5 +1,5 @@
 // Defter sayfası: özet, getiri grafiği (karşılaştırmalı), pozisyon tablosu, ağırlık ve sektör dağılımı.
-import { h, fill, icon, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
+import { h, add, fill, icon, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { valuePortfolio, plSeries, sectorAlloc, dayBefore } from '../calc.js';
@@ -34,7 +34,7 @@ export function renderPortfolio(id) {
   const view = h('div.view');
   const cleanups = [];
   if (!p) {
-    view.append(h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'),
+    add(view, h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'),
       h('section.panel.empty', h('h2', 'Bu defter bu cihazda yok'), h('p', 'Silinmiş olabilir ya da başka bir cihazda oluşturulmuş olabilir. Defterlerini taşımak için diğer cihazda "Başka cihaza taşı"yı kullan.'), h('a.btn', { href: '#/' }, 'Genel bakışa dön')));
     return { el: view };
   }
@@ -55,7 +55,7 @@ export function renderPortfolio(id) {
   cleanups.push(() => document.removeEventListener('click', closeMenu));
 
   const daysIn = -daysUntil(p.entryDate);
-  view.append(
+  add(view, 
     h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'),
     h('header.ph',
       h('div.ph-top',

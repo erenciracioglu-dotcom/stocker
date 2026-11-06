@@ -1,5 +1,5 @@
 // Pencereler: defter ve pozisyon düzenleme, içe aktarma önizlemesi, bağlantıyla taşıma, onay.
-import { h, fill, icon, toast, num, price, money, fmtDate, todayISO, isNum, curSymbol, fold } from '../util.js';
+import { h, add, fill, icon, toast, num, price, money, fmtDate, todayISO, isNum, curSymbol, fold } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { trSector } from '../calc.js';
@@ -23,7 +23,7 @@ export function confirmDialog(title, text, { ok = 'Onayla', danger = false } = {
     const d = dialogShell(title);
     d.body.appendChild(h('p', text));
     let result = false;
-    d.foot.append(
+    add(d.foot, 
       h('button.btn', { type: 'button', onclick: () => d.dlg.close() }, 'Vazgeç'),
       h('button', { class: `btn ${danger ? 'danger' : 'primary'}`, type: 'button', onclick: () => { result = true; d.dlg.close(); } }, ok),
     );
@@ -55,7 +55,7 @@ export function openPortfolioDialog(existing, { onSaved } = {}) {
   cur.addEventListener('change', () => { if (isNew && !kicker.dataset.touched) kicker.value = cur.value === 'TRY' ? 'Yeni TL defteri' : `Yeni ${cur.value} defteri`; });
   kicker.addEventListener('input', () => { kicker.dataset.touched = '1'; });
 
-  d.body.append(
+  add(d.body, 
     field('Ad', title),
     field('Üst başlık', kicker, 'Defter adının üstünde küçük yazıyla görünür.'),
     field('Açıklama', desc),
@@ -72,7 +72,7 @@ export function openPortfolioDialog(existing, { onSaved } = {}) {
       },
     }, icon('trash', 16), 'Sil'));
   }
-  d.foot.append(
+  add(d.foot, 
     h('button.btn', { type: 'button', onclick: () => d.dlg.close() }, 'Vazgeç'),
     h('button.btn.primary', {
       type: 'submit',
@@ -150,19 +150,19 @@ export function openPositionDialog({ portfolioId, index = -1, symbol = '' } = {}
     const q = data.quote(v);
     if (!q) {
       status.innerHTML = '';
-      status.append(h('span', { class: 'badge warn' }, 'Veri yok'), ` ${v} henüz veri listesinde değil. Ekleyebilirsin; fiyatı, sembol tickers.json'a eklenip veri güncellenince gelir.`);
+      add(status, h('span', { class: 'badge warn' }, 'Veri yok'), ` ${v} henüz veri listesinde değil. Ekleyebilirsin; fiyatı, sembol tickers.json'a eklenip veri güncellenince gelir.`);
       return;
     }
     status.textContent = `${q.n || v} · son fiyat ${price(q.p, q.cur)}${q.cur !== p.currency ? ` (${q.cur})` : ''}`;
     if (!name.value || name.dataset.auto) { name.value = q.n || v; name.dataset.auto = '1'; }
     if (!sector.value || sector.dataset.auto) { sector.value = q.sec ? trSector(q.sec) : 'Diğer'; sector.dataset.auto = '1'; }
     const r = data.fx(q.cur, p.currency) ?? 1;
-    quickRow.append(h('button.btn.small', { type: 'button', onclick: () => { entry.value = String(+(q.p * r).toFixed(4)); priceSource = 'manual'; } }, `Son fiyat ${num(q.p * r, 2)}`));
+    add(quickRow, h('button.btn.small', { type: 'button', onclick: () => { entry.value = String(+(q.p * r).toFixed(4)); priceSource = 'manual'; } }, `Son fiyat ${num(q.p * r, 2)}`));
     try {
       const hist = await data.loadHistory(v);
       const di = hist.t.lastIndexOf(hist.t.filter((t) => t <= (date.value || todayISO())).pop());
       if (di >= 0) {
-        quickRow.append(
+        add(quickRow, 
           h('button.btn.small', { type: 'button', onclick: () => { entry.value = String(+(hist.o[di] * r).toFixed(4)); priceSource = 'opening'; } }, `Açılış ${fmtDate(hist.t[di], { year: false })}: ${num(hist.o[di] * r, 2)}`),
           h('button.btn.small', { type: 'button', onclick: () => { entry.value = String(+(hist.c[di] * r).toFixed(4)); priceSource = 'closing'; } }, `Kapanış: ${num(hist.c[di] * r, 2)}`),
         );
@@ -185,7 +185,7 @@ export function openPositionDialog({ portfolioId, index = -1, symbol = '' } = {}
   }
   drawEvents();
 
-  d.body.append(
+  add(d.body, 
     portfolioId && index >= 0 ? null : field('Defter', pick),
     dl,
     field('Sembol', sym, 'Yahoo Finance kodu. BIST hisseleri .IS ile biter; TL defterinde sonek otomatik eklenir.'),
@@ -211,7 +211,7 @@ export function openPositionDialog({ portfolioId, index = -1, symbol = '' } = {}
       },
     }, icon('trash', 16), 'Çıkar'));
   }
-  d.foot.append(
+  add(d.foot, 
     h('button.btn', { type: 'button', onclick: () => d.dlg.close() }, 'Vazgeç'),
     h('button.btn.primary', {
       type: 'submit',
@@ -255,7 +255,7 @@ export function openImportDialog(incoming, { source = 'dosya', onDone } = {}) {
   const d = dialogShell('İçe aktar');
   const counts = { new: 0, newer: 0, older: 0, same: 0 };
   plan.forEach((x) => counts[x.status]++);
-  d.body.append(
+  add(d.body, 
     h('p', `${source === 'bağlantı' ? 'Bağlantıda' : 'Dosyada'} ${incoming.length} defter var. Birleştirince yeni defterler eklenir, aynı defterin daha yeni sürümü eskisinin yerini alır.`),
     h('ul.import-list', null, ...plan.map(({ p, status }) => h('li', { style: { '--acc': p.accent } },
       h('span.spine'),
@@ -273,7 +273,7 @@ export function openImportDialog(incoming, { source = 'dosya', onDone } = {}) {
     toast(parts.join(', ') || 'Değişiklik yok');
     onDone?.(r);
   };
-  d.foot.append(
+  add(d.foot, 
     store.list().length ? h('button.btn.danger.left', { type: 'button', onclick: async () => {
       const ok = await confirmDialog('Tümünü değiştir', `Bu cihazdaki ${store.list().length} defter silinip yerine gelen ${incoming.length} defter konacak.`, { ok: 'Tümünü değiştir', danger: true });
       if (ok) finish('replace');
@@ -306,8 +306,8 @@ export function pickFile(opts) {
 export function openPasteDialog(opts) {
   const d = dialogShell('JSON yapıştır');
   const ta = h('textarea', { style: { minHeight: '180px', fontSize: '12.5px' }, placeholder: '{ "format": "stocker.portfolios", … }' });
-  d.body.append(field('Dışa aktarılmış JSON ya da taşıma bağlantısı', ta));
-  d.foot.append(
+  add(d.body, field('Dışa aktarılmış JSON ya da taşıma bağlantısı', ta));
+  add(d.foot, 
     h('button.btn', { type: 'button', onclick: () => d.dlg.close() }, 'Vazgeç'),
     h('button.btn.primary', { type: 'submit', onclick: async () => {
       const v = ta.value.trim();
@@ -345,12 +345,12 @@ export async function openTransferDialog(list = store.list()) {
   const d = dialogShell('Başka cihaza taşı');
   const link = await store.makeLink(list);
   const box = h('div.linkbox', link);
-  d.body.append(
+  add(d.body, 
     h('p', `${list.length === 1 ? `"${list[0].title}" defteri` : `${list.length} defterin tamamı`} bu bağlantının içinde. Bağlantıyı WhatsApp'ta ya da e-postayla kendine gönder; diğer cihazda açınca defterler içe aktarılır.`),
     box,
     h('div.callout.info', icon('info'), h('div.grow', h('span', 'Veri bağlantının # işaretinden sonraki kısmında durur; tarayıcı bu kısmı hiçbir sunucuya göndermez. Bağlantıyı ele geçiren defterlerini görebilir, o yüzden yalnız kendine gönder.'))),
   );
-  d.foot.append(
+  add(d.foot, 
     h('button.btn.left', { type: 'button', onclick: () => { store.exportFile(list); } }, icon('download', 16), 'Dosya olarak indir'),
     navigator.share ? h('button.btn', { type: 'button', onclick: async () => { try { await navigator.share({ title: 'Stocker defterleri', url: link }); } catch { /* vazgeçildi */ } } }, icon('share', 16), 'Paylaş') : null,
     h('button.btn.primary', { type: 'button', onclick: async () => {

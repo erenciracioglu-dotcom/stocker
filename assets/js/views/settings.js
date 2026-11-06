@@ -1,5 +1,5 @@
 // Ayarlar: taşıma ve yedek, görünüm, veri listesi, hakkında.
-import { h, icon, toast, fmtDateTime, ago, fmtDate } from '../util.js';
+import { h, add, icon, toast, fmtDateTime, ago, fmtDate } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { pickFile, openPasteDialog, openTransferDialog, confirmDialog, ghAddSymbols, importFile } from './dialogs.js';
@@ -10,7 +10,7 @@ export function renderSettings() {
   const list = store.list();
   const market = data.getMarket();
 
-  view.append(h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'), h('h1', { style: { fontStretch: '112%', fontWeight: 680, fontSize: '1.7rem', letterSpacing: '-0.015em' } }, 'Ayarlar ve taşıma'));
+  add(view, h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'), h('h1', { style: { fontStretch: '112%', fontWeight: 680, fontSize: '1.7rem', letterSpacing: '-0.015em' } }, 'Ayarlar ve taşıma'));
 
   // ---- taşıma
   const drop = h('div.drop',

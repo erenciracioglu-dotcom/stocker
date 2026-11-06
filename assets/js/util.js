@@ -184,6 +184,8 @@ export function append(el, kids) {
 export function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
 /** replaceChildren gibi, ama null/false değerleri atlar ("null" yazısı çıkmaz). */
 export function fill(el, ...kids) { clear(el); return append(el, kids); }
+/** Element.append gibi, ama null/false değerleri atlar. */
+export function add(el, ...kids) { return append(el, kids); }
 
 export function debounce(fn, ms = 200) {
   let t;
