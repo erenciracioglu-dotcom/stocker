@@ -1,5 +1,5 @@
 // Stocker: yönlendirme, üst çubuk, arama, tema, otomatik yenileme.
-import { h, icon, toast, fmtTime, ago, setNumberLocale, fold } from './util.js';
+import { h, fill, icon, toast, fmtTime, ago, setNumberLocale, fold } from './util.js';
 import * as store from './store.js';
 import * as data from './data.js';
 import { renderDashboard } from './views/dashboard.js';
@@ -23,7 +23,7 @@ function applyTheme() {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', dark ? '#111518' : '#e9edee');
   const btn = document.getElementById('theme');
-  if (btn) { btn.replaceChildren(icon(dark ? 'sun' : 'moon')); btn.setAttribute('aria-label', dark ? 'Açık temaya geç' : 'Koyu temaya geç'); }
+  if (btn) { fill(btn, icon(dark ? 'sun' : 'moon')); btn.setAttribute('aria-label', dark ? 'Açık temaya geç' : 'Koyu temaya geç'); }
 }
 
 // ---------------------------------------------------------------- yönlendirme
@@ -52,7 +52,7 @@ function render({ keepScroll = false } = {}) {
     res = { el: h('section.panel', h('h2', 'Bu sayfa açılamadı'), h('p.note', String(e?.message || e)), h('a.btn', { href: '#/', style: { marginTop: '12px' } }, 'Genel bakışa dön')) };
   }
   current = res;
-  main.replaceChildren(res.el);
+  fill(main, res.el);
   document.title = title;
   window.scrollTo(0, keepScroll ? y : 0);
 }
@@ -63,7 +63,7 @@ function updateStamp() {
   const m = data.getMarket();
   const el = document.getElementById('updated');
   if (!el) return;
-  el.replaceChildren(m?.generated ? h('span', { title: new Date(m.generated).toLocaleString('tr-TR') }, 'Veri ', h('b', fmtTime(m.generated)), ` · ${ago(m.generated)}`) : '');
+  fill(el, m?.generated ? h('span', { title: new Date(m.generated).toLocaleString('tr-TR') }, 'Veri ', h('b', fmtTime(m.generated)), ` · ${ago(m.generated)}`) : '');
 }
 
 async function refresh({ force = true, announce = false } = {}) {
@@ -106,7 +106,7 @@ function setupSearch() {
       items.push({ href: `#/s/${encodeURIComponent(typed)}`, sym: typed, nm: 'Sembol sayfasını aç', tag: '' });
     }
     active = items.length ? 0 : -1;
-    list.replaceChildren(...items.map((it, i) => h('li', { role: 'option', 'aria-selected': String(i === active) },
+    fill(list, ...items.map((it, i) => h('li', { role: 'option', 'aria-selected': String(i === active) },
       h('a', { href: it.href, class: i === active ? 'active' : '', onclick: (e) => { e.preventDefault(); go(it.href); } },
         h('span.sym', it.acc ? { style: { borderLeft: `4px solid ${it.acc}`, paddingLeft: '8px' } } : null, it.sym), h('span.nm', it.nm), h('span.tag', it.tag)))));
     list.hidden = !items.length;

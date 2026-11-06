@@ -1,5 +1,5 @@
 // Genel bakış: toplam değer, toplam kâr/zarar seyri, defter dizini, günün hareketleri, yaklaşan tarihler.
-import { h, icon, money, pct, price, num, fmtDate, fmtTime, daysUntil, todayISO, trend, curSymbol, isNum, ago } from '../util.js';
+import { h, fill, icon, money, pct, price, num, fmtDate, fmtTime, daysUntil, todayISO, trend, curSymbol, isNum, ago } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { valuePortfolio, totals, combinedPL, plSeries, spMap, dayBefore } from '../calc.js';
@@ -37,10 +37,10 @@ export function renderDashboard() {
     h('div.hero-label', h('span', `Tüm defterler, ${cur === 'TRY' ? 'TL' : 'dolar'} karşılığı`), h('span', { style: { marginLeft: 'auto' } }, curCtl)),
     h('div.readout', { 'aria-live': 'polite' }, splitMoney(t.total, cur)),
     h('div.deltas',
-      delta('Bugün', money(t.dayChg, cur, { sign: true }), pct(t.dayPct), trend(t.dayChg)),
+      delta('Günlük', money(t.dayChg, cur, { sign: true }), pct(t.dayPct), trend(t.dayChg)),
       delta('Toplam kâr/zarar', money(t.pl, cur, { sign: true }), pct(t.plPct), trend(t.pl)),
       delta('Maliyet', money(t.cost, cur), null, 'flat')),
-    usdtry ? h('div.hint', `${list.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Fiyatlar Yahoo Finance'ten, yarım saatte bir güncellenir; BIST verisi 15 dk gecikmelidir.`) : null,
+    usdtry ? h('div.hint', `${list.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Günlük değişim her hissenin son seansına göredir; ABD piyasası kapalıyken dünkü seans görünür. Fiyatlar Yahoo Finance'ten, yarım saatte bir güncellenir; BIST verisi 15 dk gecikmelidir.`) : null,
   );
 
   const chartBox = h('div.chart-box');
@@ -67,7 +67,7 @@ export function renderDashboard() {
     series.setData([{ time: dayBefore(first), value: 0 }, ...s.t.map((d, i) => ({ time: d, value: s.v[i] }))]);
     chart.timeScale().fitContent();
     const showTip = (time, value) => {
-      tip.replaceChildren(h('span', fmtDate(time)), h('b', { class: trend(value) }, money(value, cur, { sign: true, digits: 0 })));
+      fill(tip, h('span', fmtDate(time)), h('b', { class: trend(value) }, money(value, cur, { sign: true, digits: 0 })));
     };
     showTip(s.t[s.t.length - 1], s.v[s.v.length - 1]);
     chart.subscribeCrosshairMove((param) => {
@@ -125,7 +125,7 @@ export function marketStrip(market) {
     const q = data.quote('USDTRY=X');
     strip.appendChild(h('span.mkt.fx', h('b', 'USD/TRY'), num(usdtry, 4), q?.pc ? h('span', { class: trend(q.p - q.pc) }, pct(q.p / q.pc - 1)) : null));
   }
-  if (market?.generated) strip.appendChild(h('span.mkt', { title: market.generated }, `Veri ${fmtTime(market.generated)} (${ago(market.generated)})`));
+  if (market?.generated) strip.appendChild(h('span.mkt.show-sm', { title: market.generated }, `Veri ${fmtTime(market.generated)} (${ago(market.generated)})`));
   return strip;
 }
 
@@ -133,13 +133,15 @@ function ledgerRow(p) {
   const v = valuePortfolio(p);
   const cur = p.currency;
   const s = plSeries(p, spMap(p.positions.map((x) => x.symbol)));
-  const sp = s.t.length > 1 ? sparkline([0, ...s.pl], { w: 132, h: 34, color: p.accent, baseline: 0, label: `${p.title} kâr/zarar seyri` }) : h('span');
+  const sp = s.t.length > 1 ? sparkline([0, ...s.pl], { w: 132, h: 34, color: p.accent, baseline: 0, stretch: true, label: `${p.title} kâr/zarar seyri` }) : h('span');
   return h('a.ledger-row', { href: `#/p/${p.id}`, style: { '--acc': p.accent } },
     h('span.spine'),
-    h('div', h('div.ledger-title', p.title), h('div.ledger-meta', h('span', p.kicker || cur), h('span', `${p.positions.length} hisse`), h('span', `${fmtDate(p.entryDate)}'den beri`))),
-    h('div.cell.c-val', h('span.k', 'Değer'), h('span.v', money(v.total, cur))),
+    h('div', h('div.ledger-title', p.title), h('div.ledger-meta', h('span', p.kicker || cur), h('span', `${p.positions.length} hisse`), h('span.hide-sm', `${fmtDate(p.entryDate)}'den beri`))),
+    h('div.cell.c-val', h('span.k', 'Değer'), h('span.v', money(v.total, cur)),
+      h('span.v2.show-sm', h('span', { class: trend(v.pl) }, pct(v.plPct)), h('span.muted', ' toplam')),
+      h('span.v2.show-sm', h('span', { class: trend(v.dayChg) }, pct(v.dayPct)), h('span.muted', ' günlük'))),
     h('div.cell.c-cost', h('span.k', 'Kâr/zarar'), h('span.v', { class: `v ${trend(v.pl)}` }, money(v.pl, cur, { sign: true })), h('span.v2', { class: `v2 ${trend(v.pl)}` }, pct(v.plPct))),
-    h('div.cell.c-day', h('span.k', 'Bugün'), h('span.v', { class: `v ${trend(v.dayChg)}` }, money(v.dayChg, cur, { sign: true })), h('span.v2', { class: `v2 ${trend(v.dayChg)}` }, pct(v.dayPct))),
+    h('div.cell.c-day', h('span.k', 'Günlük'), h('span.v', { class: `v ${trend(v.dayChg)}` }, money(v.dayChg, cur, { sign: true })), h('span.v2', { class: `v2 ${trend(v.dayChg)}` }, pct(v.dayPct))),
     sp,
   );
 }

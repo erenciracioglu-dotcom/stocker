@@ -1,5 +1,5 @@
 // Defter sayfası: özet, getiri grafiği (karşılaştırmalı), pozisyon tablosu, ağırlık ve sektör dağılımı.
-import { h, icon, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
+import { h, fill, icon, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { valuePortfolio, plSeries, sectorAlloc, dayBefore } from '../calc.js';
@@ -72,7 +72,7 @@ export function renderPortfolio(id) {
     stat('Değer', money(v.total, cur)),
     stat('Maliyet', money(v.cost, cur)),
     stat('Kâr/zarar', money(v.pl, cur, { sign: true }), pct(v.plPct), trend(v.pl)),
-    stat('Bugün', money(v.dayChg, cur, { sign: true }), pct(v.dayPct), trend(v.dayChg)),
+    stat('Günlük', money(v.dayChg, cur, { sign: true }), pct(v.dayPct), trend(v.dayChg)),
     stat('Nakit', money(v.cash, cur)),
     stat('Başlangıç', fmtDate(p.entryDate), daysIn > 0 ? `${daysIn} gün önce` : 'bugün')));
 
@@ -102,7 +102,7 @@ export function renderPortfolio(id) {
     try {
       const res = await perfData(p, bench);
       if (chart) { chart.remove(); chart = null; }
-      box.replaceChildren();
+      fill(box);
       box.classList.remove('loading');
       if (!res.port.length) { box.appendChild(h('div.empty-chart', 'Getiri serisi için fiyat geçmişi henüz yok.')); return; }
       chart = createChart(box, { priceDigits: 1 });
@@ -116,7 +116,7 @@ export function renderPortfolio(id) {
       chart.timeScale().fitContent();
       const bName = BENCHES.find((b) => b.s === bench)?.n || bench;
       const showLegend = (pv, bv) => {
-        legend.replaceChildren(
+        fill(legend, 
           h('span', h('span.key', { style: { background: acc } }), 'Defter ', h('b', { class: trend(pv) }, isNum(pv) ? fmtP(pv) : '—')),
           sb ? h('span', h('span.key', { style: { background: gray } }), `${bName} `, h('b', { class: trend(bv) }, isNum(bv) ? fmtP(bv) : '—')) : null);
       };
@@ -133,7 +133,7 @@ export function renderPortfolio(id) {
     } catch (e) {
       console.error(e);
       box.classList.remove('loading');
-      box.replaceChildren(h('div.empty-chart', 'Grafik verisi yüklenemedi.'));
+      fill(box, h('div.empty-chart', 'Grafik verisi yüklenemedi.'));
     }
   };
   requestAnimationFrame(drawPerf);
@@ -240,11 +240,11 @@ function positionsPanel(p, v) {
     { id: 'sym', label: 'Hisse', get: (r) => r.pos.ticker, str: true },
     { id: 'lots', label: 'Lot', get: (r) => r.lots, cls: 'hide-sm' },
     { id: 'entry', label: 'Giriş', get: (r) => r.entry, cls: 'hide-sm' },
-    { id: 'price', label: 'Son', get: (r) => r.price },
-    { id: 'day', label: 'Bugün', get: (r) => r.dayPct },
+    { id: 'price', label: 'Son', get: (r) => r.price, cls: 'hide-sm' },
+    { id: 'day', label: 'Günlük', get: (r) => r.dayPct },
     { id: 'value', label: 'Değer', get: (r) => r.value ?? r.cost },
     { id: 'pl', label: 'Kâr/zarar', get: (r) => r.pl, cls: 'hide-sm' },
-    { id: 'plPct', label: 'Getiri', get: (r) => r.plPct },
+    { id: 'plPct', label: 'Getiri', get: (r) => r.plPct, cls: 'hide-sm' },
     { id: 'weight', label: 'Ağırlık', get: (r) => r.weight, cls: 'hide-sm' },
   ];
   const panel = h('section.panel', { 'aria-label': 'Pozisyonlar' });
@@ -265,25 +265,25 @@ function positionsPanel(p, v) {
     for (const { r, i } of rows) {
       const q = r.q;
       tbody.appendChild(h('tr', { onclick: () => { location.hash = `#/s/${encodeURIComponent(r.pos.symbol)}`; } },
-        h('td', h('span.sym', r.pos.ticker), h('span.nm', r.pos.name)),
+        h('td', h('span.sym', r.pos.ticker), h('span.nm.hide-sm', r.pos.name), h('span.nm.show-sm', price(r.price, cur), r.ext && Math.abs(r.ext.pct) >= 0.001 ? ` · ${r.ext.state === 'PRE' ? 'öncesi' : 'sonrası'} ${pct(r.ext.pct, { digits: 1 })}` : '')),
         h('td.hide-sm', num(r.lots, r.lots % 1 ? 2 : 0)),
         h('td.hide-sm', price(r.entry, cur)),
-        h('td', price(r.price, cur), r.ext && Math.abs(r.ext.pct) >= 0.001 ? h('span.ext', `${r.ext.state === 'PRE' ? 'Öncesi' : 'Sonrası'} ${pct(r.ext.pct, { digits: 1 })}`) : null, r.missing ? h('span.ext', 'veri yok') : null),
+        h('td.hide-sm', price(r.price, cur), r.ext && Math.abs(r.ext.pct) >= 0.001 ? h('span.ext', `${r.ext.state === 'PRE' ? 'Öncesi' : 'Sonrası'} ${pct(r.ext.pct, { digits: 1 })}`) : null, r.missing ? h('span.ext', 'veri yok') : null),
         h('td', { class: trend(r.dayPct) }, pct(r.dayPct)),
-        h('td', money(r.value ?? r.cost, cur)),
+        h('td', money(r.value ?? r.cost, cur), h('span.ext.show-sm', { class: `ext show-sm ${trend(r.plPct)}` }, pct(r.plPct))),
         h('td.hide-sm', { class: `hide-sm ${trend(r.pl)}` }, money(r.pl, cur, { sign: true })),
-        h('td', h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: '10px' } }, devBar(r.plPct, maxAbs, { w: 70 }), h('span', { class: trend(r.plPct), style: { minWidth: '62px', display: 'inline-block' } }, pct(r.plPct)))),
+        h('td.hide-sm', h('span', { style: { display: 'inline-flex', alignItems: 'center', gap: '10px' } }, devBar(r.plPct, maxAbs, { w: 70 }), h('span', { class: trend(r.plPct), style: { minWidth: '62px', display: 'inline-block' } }, pct(r.plPct)))),
         h('td.hide-sm', pct(r.weight, { sign: false, digits: 1 })),
         h('td.act', h('button.icon-btn', { type: 'button', 'aria-label': `${r.pos.ticker} düzenle`, onclick: (e) => { e.stopPropagation(); openPositionDialog({ portfolioId: p.id, index: i }); } }, icon('edit', 16)))));
     }
     const tfoot = h('tfoot', h('tr',
-      h('td', 'Toplam'), h('td.hide-sm'), h('td.hide-sm'), h('td'),
+      h('td', 'Toplam'), h('td.hide-sm'), h('td.hide-sm'), h('td.hide-sm'),
       h('td', { class: trend(v.dayPct) }, pct(v.dayPct)),
-      h('td', money(v.value, cur)),
+      h('td', money(v.value, cur), h('span.ext.show-sm', { class: `ext show-sm ${trend(v.plPct)}` }, pct(v.plPct))),
       h('td.hide-sm', { class: `hide-sm ${trend(v.pl)}` }, money(v.pl, cur, { sign: true })),
-      h('td', { class: trend(v.plPct) }, pct(v.plPct)),
+      h('td.hide-sm', { class: `hide-sm ${trend(v.plPct)}` }, pct(v.plPct)),
       h('td.hide-sm', v.cash > 0 ? `+ nakit ${money(v.cash, cur)}` : ''), h('td.act')));
-    panel.replaceChildren(
+    fill(panel, 
       h('div.panel-head', h('h2', 'Pozisyonlar'), h('span.sub', `${v.rows.length} hisse · sıralamak için başlığa dokun`), h('span.spacer'),
         h('button.btn.small', { type: 'button', onclick: () => openPositionDialog({ portfolioId: p.id }) }, icon('plus', 14), 'Hisse ekle')),
       v.rows.length ? h('div.tbl-wrap', h('table.tbl', thead, tbody, tfoot)) : h('p.note', 'Bu defterde henüz hisse yok. "Hisse ekle" ile başla.'));

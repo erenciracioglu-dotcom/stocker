@@ -1,5 +1,5 @@
 // Pencereler: defter ve pozisyon düzenleme, içe aktarma önizlemesi, bağlantıyla taşıma, onay.
-import { h, icon, toast, num, price, money, fmtDate, todayISO, isNum, curSymbol, fold } from '../util.js';
+import { h, fill, icon, toast, num, price, money, fmtDate, todayISO, isNum, curSymbol, fold } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { trSector } from '../calc.js';
@@ -48,7 +48,7 @@ export function openPortfolioDialog(existing, { onSaved } = {}) {
   let accent = p.accent;
   const sw = h('div.swatches', { role: 'group', 'aria-label': 'Defter rengi' });
   const drawSw = () => {
-    sw.replaceChildren(...store.ACCENTS.map((a) => h('button.swatch', { type: 'button', style: { background: a }, 'aria-label': a, 'aria-pressed': String(a === accent), onclick: () => { accent = a; drawSw(); } })),
+    fill(sw, ...store.ACCENTS.map((a) => h('button.swatch', { type: 'button', style: { background: a }, 'aria-label': a, 'aria-pressed': String(a === accent), onclick: () => { accent = a; drawSw(); } })),
       h('input', { type: 'color', value: accent, 'aria-label': 'Özel renk', style: { width: '36px', height: '28px', border: 0, background: 'none', padding: 0 }, oninput: (e) => { accent = e.target.value; } }));
   };
   drawSw();
@@ -145,7 +145,7 @@ export function openPositionDialog({ portfolioId, index = -1, symbol = '' } = {}
   };
   async function refreshSym() {
     const v = normSym();
-    quickRow.replaceChildren();
+    fill(quickRow);
     if (!v) { status.textContent = ''; return; }
     const q = data.quote(v);
     if (!q) {
@@ -177,7 +177,7 @@ export function openPositionDialog({ portfolioId, index = -1, symbol = '' } = {}
   pick.addEventListener('change', () => { p = store.get(pick.value); refreshSym(); });
 
   function drawEvents() {
-    evBox.replaceChildren(...events.map((e, i) => h('div', { style: { display: 'grid', gridTemplateColumns: '150px 1fr auto', gap: '8px' } },
+    fill(evBox, ...events.map((e, i) => h('div', { style: { display: 'grid', gridTemplateColumns: '150px 1fr auto', gap: '8px' } },
       h('input', { type: 'date', value: e.date || '', 'aria-label': 'Olay tarihi', oninput: (ev) => { e.date = ev.target.value; }, style: { height: '36px', border: '1px solid var(--rule-strong)', borderRadius: '6px', padding: '0 8px', background: 'var(--raised)' } }),
       h('input', { value: e.label || '', placeholder: 'Örn. FDA kararı (PDUFA)', 'aria-label': 'Olay açıklaması', oninput: (ev) => { e.label = ev.target.value; }, style: { height: '36px', border: '1px solid var(--rule-strong)', borderRadius: '6px', padding: '0 10px', background: 'var(--raised)' } }),
       h('button.icon-btn', { type: 'button', 'aria-label': 'Olayı kaldır', onclick: () => { events.splice(i, 1); drawEvents(); } }, icon('close', 16)))),
@@ -296,7 +296,8 @@ export async function importFile(file, opts) {
 }
 
 export function pickFile(opts) {
-  const input = h('input', { type: 'file', accept: '.json,application/json', style: { display: 'none' } });
+  // accept kısıtı yok: Android'de WhatsApp/Drive'dan inen .json dosyaları bazen türsüz görünür
+  const input = h('input', { type: 'file', style: { display: 'none' } });
   input.addEventListener('change', () => { if (input.files[0]) importFile(input.files[0], opts); input.remove(); });
   document.body.appendChild(input);
   input.click();

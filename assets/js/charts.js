@@ -75,9 +75,9 @@ export function alpha(hex, a) {
 // ---------------------------------------------------------------- SVG küçük grafikler
 
 /** Küçük çizgi grafik. baseline verilirse o değerde ince bir yatay çizgi çizer. */
-export function sparkline(values, { w = 120, h = 32, color = 'currentColor', baseline = null, area = true, label } = {}) {
+export function sparkline(values, { w = 120, h = 32, color = 'currentColor', baseline = null, area = true, label, stretch = false } = {}) {
   const vals = values.filter(isNum);
-  const svgEl = s('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, class: 'spark', role: 'img', 'aria-label': label || 'Küçük grafik' });
+  const svgEl = s('svg', { viewBox: `0 0 ${w} ${h}`, width: w, height: h, class: 'spark', role: 'img', 'aria-label': label || 'Küçük grafik', preserveAspectRatio: stretch ? 'none' : null });
   if (vals.length < 2) return svgEl;
   let min = Math.min(...vals), max = Math.max(...vals);
   if (baseline != null) { min = Math.min(min, baseline); max = Math.max(max, baseline); }
@@ -86,12 +86,12 @@ export function sparkline(values, { w = 120, h = 32, color = 'currentColor', bas
   const x = (i) => pad + (i / (values.length - 1)) * (w - pad * 2);
   const y = (v) => pad + (1 - (v - min) / (max - min)) * (h - pad * 2);
   const pts = values.map((v, i) => (isNum(v) ? `${x(i).toFixed(1)},${y(v).toFixed(1)}` : null)).filter(Boolean);
-  if (baseline != null) svgEl.appendChild(s('line', { x1: pad, x2: w - pad, y1: y(baseline), y2: y(baseline), class: 'spark-base' }));
+  if (baseline != null) svgEl.appendChild(s('line', { x1: pad, x2: w - pad, y1: y(baseline), y2: y(baseline), class: 'spark-base', 'vector-effect': 'non-scaling-stroke' }));
   if (area) {
     const yb = baseline != null ? y(baseline) : h - pad;
     svgEl.appendChild(s('polygon', { points: `${x(0)},${yb} ${pts.join(' ')} ${x(values.length - 1)},${yb}`, fill: color, opacity: 0.1 }));
   }
-  svgEl.appendChild(s('polyline', { points: pts.join(' '), fill: 'none', stroke: color, 'stroke-width': 1.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }));
+  svgEl.appendChild(s('polyline', { points: pts.join(' '), fill: 'none', stroke: color, 'stroke-width': 1.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'vector-effect': 'non-scaling-stroke' }));
   const lastI = values.length - 1;
   if (isNum(values[lastI])) svgEl.appendChild(s('circle', { cx: x(lastI), cy: y(values[lastI]), r: 2.6, fill: color, class: 'spark-dot' }));
   return svgEl;

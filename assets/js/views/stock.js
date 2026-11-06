@@ -1,5 +1,5 @@
 // Hisse sayfası: fiyat grafiği (göstergeli), teknik özet, temel veriler, mali tablolar, haberler, şirket profili.
-import { h, icon, money, pct, price, num, compact, fmtDate, fmtDateTime, fmtTime, ago, trend, isNum, priceDigits, todayISO, daysUntil } from '../util.js';
+import { h, fill, icon, money, pct, price, num, compact, fmtDate, fmtDateTime, fmtTime, ago, trend, isNum, priceDigits, todayISO, daysUntil } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import * as ta from '../ta.js';
@@ -56,7 +56,7 @@ export function renderStock(rawSym) {
     h('div.sh-px',
       h('div.readout', price(q.p, cur)),
       h('div.chg', { class: `chg ${trend(chg)}` }, `${chg != null ? money(chg, cur, { sign: true, digits: pd }) : ''}  ${pct(chgPct)}`),
-      isNum(q.xp) ? h('div.ext', `${q.xs === 'PRE' ? 'Seans öncesi' : 'Kapanış sonrası'} ${price(q.xp, cur)} `, h('span', { class: trend(q.xp - q.p) }, pct(q.xp / q.p - 1)), q.xt ? ` · ${fmtTime(q.xt)}` : '') : null,
+      isNum(q.xp) ? h('div.ext', `${q.xs === 'PRE' ? 'Seans öncesi' : 'Kapanış sonrası'} ${price(q.xp, cur)} `, h('span', { class: trend(q.xp - q.p) }, pct(q.xp / q.p - 1)), q.xt ? ` · ${fmtDateTime(q.xt)}` : '') : null,
       h('div.asof', asof),
       isEquity || ty === 'ETF' ? h('div', { style: { marginTop: '10px' } }, h('button.btn.small', { type: 'button', onclick: () => openPositionDialog({ symbol: sym }) }, icon('plus', 14), held.length ? 'Bir deftere daha ekle' : 'Deftere ekle')) : null)));
 
@@ -101,11 +101,11 @@ export function renderStock(rawSym) {
   let chart = null;
 
   const drawTabs = () => {
-    tabBar.replaceChildren(...tabs.map(([id, label]) => h('button', {
+    fill(tabBar, ...tabs.map(([id, label]) => h('button', {
       type: 'button', role: 'tab', 'aria-selected': String(ui.tab === id),
       onclick: () => { ui.tab = id; saveUi(); drawTabs(); },
     }, label)));
-    tabBody.replaceChildren();
+    fill(tabBody);
     try {
       if (ui.tab === 'teknik') tabBody.appendChild(technicalTab(ctx));
       else if (ui.tab === 'temel') tabBody.appendChild(fundamentalsTab(ctx));
@@ -119,8 +119,8 @@ export function renderStock(rawSym) {
   };
 
   const drawControls = () => {
-    rangeCtl.replaceChildren(...RANGES.map(([id, label]) => h('button', { type: 'button', title: label, 'aria-pressed': String(ui.range === id), onclick: () => { ui.range = id; saveUi(); drawControls(); drawChart(); } }, id)));
-    typeCtl.replaceChildren(
+    fill(rangeCtl, ...RANGES.map(([id, label]) => h('button', { type: 'button', title: label, 'aria-pressed': String(ui.range === id), onclick: () => { ui.range = id; saveUi(); drawControls(); drawChart(); } }, id)));
+    fill(typeCtl, 
       h('button', { type: 'button', 'aria-pressed': String(ui.type === 'line'), onclick: () => { ui.type = 'line'; saveUi(); drawControls(); drawChart(); } }, 'Çizgi'),
       h('button', { type: 'button', 'aria-pressed': String(ui.type === 'candle'), onclick: () => { ui.type = 'candle'; saveUi(); drawControls(); drawChart(); } }, 'Mum'));
     const intraday = ui.range === '1G' || ui.range === '5G';
@@ -128,7 +128,7 @@ export function renderStock(rawSym) {
       type: 'button', 'aria-pressed': String(!!ui[group][key]), disabled: group === 'ov' && intraday,
       onclick: () => { ui[group][key] = !ui[group][key]; saveUi(); drawControls(); drawChart(); },
     }, color ? h('span.key', { style: { background: color } }) : null, label);
-    chips.replaceChildren(
+    fill(chips, 
       chip('ov', 'sma20', 'Ort. 20', cssVar('--s1')), chip('ov', 'sma50', 'Ort. 50', cssVar('--s2')), chip('ov', 'sma200', 'Ort. 200', cssVar('--s3')), chip('ov', 'bb', 'Bollinger', cssVar('--bench')),
       h('span', { style: { width: '10px' } }),
       chip('pn', 'vol', 'Hacim'), chip('pn', 'rsi', 'RSI'), chip('pn', 'macd', 'MACD'));
@@ -136,7 +136,7 @@ export function renderStock(rawSym) {
 
   const drawChart = () => {
     if (chart) { chart.remove(); chart = null; }
-    box.replaceChildren();
+    fill(box);
     const intraday = ui.range === '1G' || ui.range === '5G';
     const d = ctx.daily;
     if (!d || !d.t.length) { box.appendChild(h('div.empty-chart', 'Fiyat geçmişi yükleniyor…')); return; }
@@ -221,15 +221,15 @@ export function renderStock(rawSym) {
     const lastClose = bars[bars.length - 1]?.close;
     if (isNum(base) && isNum(lastClose) && base) {
       const rr = lastClose / base - 1;
-      retEl.replaceChildren(`${r ? r[1] : ''} değişim `, h('b', { class: trend(rr) }, pct(rr)));
+      fill(retEl, `${r ? r[1] : ''} değişim `, h('b', { class: trend(rr) }, pct(rr)));
     }
 
     // imleç bilgisi
     const showTip = (b, prev) => {
-      if (!b) { tip.replaceChildren(); return; }
+      if (!b) { fill(tip); return; }
       const c = b.close ?? b.value;
       const ch = prev && isNum(prev.close) ? c / prev.close - 1 : null;
-      tip.replaceChildren(
+      fill(tip, 
         h('span', typeof b.time === 'number' ? fmtDateTime((b.time - localOffsetSec()) * 1000) : fmtDate(b.time)),
         ui.type === 'candle' || intraday ? h('span', 'A ', h('b', fmt(b.open)), ' Y ', h('b', fmt(b.high)), ' D ', h('b', fmt(b.low))) : null,
         h('span', 'K ', h('b', fmt(c)), ch != null ? h('span', { class: trend(ch) }, ` ${pct(ch)}`) : null),
@@ -279,6 +279,13 @@ export function mergeToday(hist, q) {
     if (isNum(q.v)) d.v[n] = Math.max(d.v[n] || 0, q.v);
   } else if (q.d > d.t[n]) {
     d.t.push(q.d); d.o.push(q.o ?? q.p); d.h.push(Math.max(q.h ?? q.p, q.p)); d.l.push(Math.min(q.l ?? q.p, q.p)); d.c.push(q.p); d.v.push(q.v || 0);
+  }
+  // Yahoo bazı günleri eksik ya da gün içi son fiyatla verir; önceki seansı resmi önceki kapanışla eşitle
+  const k = d.t.length - 2;
+  if (k >= 0 && isNum(q.pc) && isNum(d.c[k]) && Math.abs(d.c[k] / q.pc - 1) > 0.0005 && Math.abs(d.c[k] / q.pc - 1) < 0.05) {
+    d.c[k] = q.pc;
+    if (isNum(d.h[k])) d.h[k] = Math.max(d.h[k], q.pc);
+    if (isNum(d.l[k])) d.l[k] = Math.min(d.l[k], q.pc);
   }
   return d;
 }
@@ -367,7 +374,7 @@ function technicalTab(ctx) {
       rangeBar(Math.min(lo52, ...costMarks.map((m) => m.v)), Math.max(hi52, ...costMarks.map((m) => m.v)), [{ v: sg.price, label: 'Son fiyat' }, ...costMarks], { fmt: (x) => num(x, ctx.pd) }),
       h('div.range-legend', h('span', h('i'), 'son fiyat'), costMarks.length ? h('span', h('i', { style: { background: 'var(--s2)' } }), 'giriş fiyatın') : null),
       h('p.hint', { style: { marginTop: '6px' } }, `${RISK_TEXT.range52((sg.price - lo52) / (hi52 - lo52 || 1))} Dip ${num(lo52, ctx.pd)}, zirve ${num(hi52, ctx.pd)}.`)),
-    pv ? h('div', h('h3', 'Pivot seviyeleri'), h('ul.kv', ...[['R2', pv.R2], ['R1', pv.R1], ['Pivot', pv.P], ['S1', pv.S1], ['S2', pv.S2]].map(([k, val]) => h('li', h('span.k', k), h('span.v', { class: sg.price > val ? 'up' : 'down' }, num(val, ctx.pd))))), h('p.hint', RISK_TEXT.pivots)) : null);
+    pv ? h('div', h('h3', 'Pivot seviyeleri'), h('ul.kv', ...[['R2', pv.R2], ['R1', pv.R1], ['Pivot', pv.P], ['S1', pv.S1], ['S2', pv.S2]].map(([k, val]) => h('li', h('span.k', k), h('span.v', num(val, ctx.pd), h('span.muted', { style: { fontWeight: 420, marginLeft: '8px', fontSize: '12.5px' } }, pct(val / sg.price - 1, { digits: 1 })))))), h('p.hint', RISK_TEXT.pivots)) : null);
 
   const retGrid = h('div.returns', ...rets.map((x) => h('div', h('div.k', x.label), h('div.v', { class: `v ${trend(x.v)}` }, isNum(x.v) ? pct(x.v, { digits: Math.abs(x.v) >= 1 ? 0 : 1 }) : '—'))));
   wrap.appendChild(h('div.grid-2',
@@ -418,7 +425,9 @@ function fundamentalsTab(ctx) {
   if (isNum(divY) && divY > 0.2) divY = divY / 100;  // Yahoo bazen yüzde olarak verir
   if (!isNum(divY) || divY === 0) divY = isNum(st.trailingAnnualDividendYield) ? st.trailingAnnualDividendYield : divY;
   const burn = isNum(st.operatingCashflow) && st.operatingCashflow < 0 ? -st.operatingCashflow : isNum(st.freeCashflow) && st.freeCashflow < 0 ? -st.freeCashflow : null;
-  const runway = burn && isNum(st.totalCash) ? (st.totalCash / burn) * 12 : null;
+  const lossMaking = (isNum(st.netIncomeToCommon) && st.netIncomeToCommon < 0) || (isNum(st.trailingEps) && st.trailingEps < 0);
+  const runway = lossMaking && burn && isNum(st.totalCash) ? (st.totalCash / burn) * 12 : null;
+  const bsDate = f.bs?.q?.d?.[f.bs.q.d.length - 1] || f.bs?.y?.d?.[f.bs.y.d.length - 1];
 
   const valuation = sec('Değerleme', `fiyat ${qcur}`,
     row('Piyasa değeri', isNum(mc) ? bigMoney(mc, qcur) : null, FUND_TEXT.marketCap(mc)),
@@ -432,7 +441,7 @@ function fundamentalsTab(ctx) {
 
   const hasRevenue = isNum(st.totalRevenue) && st.totalRevenue > 0;
   const profitability = sec('Kârlılık ve büyüme', null,
-    hasRevenue ? row('Brüt marj', pc(st.grossMargins, 1), isNum(st.grossMargins) ? FUND_TEXT.grossMargins(st.grossMargins) : null) : null,
+    hasRevenue && st.grossMargins ? row('Brüt marj', pc(st.grossMargins, 1), isNum(st.grossMargins) ? FUND_TEXT.grossMargins(st.grossMargins) : null) : null,
     hasRevenue ? row('Faaliyet marjı', pc(st.operatingMargins, 1), isNum(st.operatingMargins) ? FUND_TEXT.operatingMargins(st.operatingMargins) : null, trend(st.operatingMargins)) : null,
     hasRevenue ? row('Net marj', pc(st.profitMargins, 1), isNum(st.profitMargins) ? FUND_TEXT.profitMargins(st.profitMargins) : null, trend(st.profitMargins)) : null,
     row('Özsermaye kârlılığı', pc(st.returnOnEquity, 1), isNum(st.returnOnEquity) ? FUND_TEXT.returnOnEquity(st.returnOnEquity) : null, trend(st.returnOnEquity)),
@@ -443,7 +452,7 @@ function fundamentalsTab(ctx) {
     !hasRevenue ? row('Satış', 'henüz yok', 'Şirketin kayda değer satış geliri yok; değeri büyük ölçüde gelecekteki ürünlerine (ör. onay bekleyen ilaçlarına) bağlı.') : null);
 
   const balance = sec('Bilanço ve nakit', fcur !== qcur ? `tablolar ${fcur}` : null,
-    row('Nakit', isNum(st.totalCash) ? bigMoney(st.totalCash, fcur) : null, FUND_TEXT.totalCash()),
+    row(bsDate ? `Nakit (${fmtDate(bsDate)})` : 'Nakit', isNum(st.totalCash) ? bigMoney(st.totalCash, fcur) : null, `${FUND_TEXT.totalCash()}${bsDate ? ' Son açıklanan bilanço tarihindeki tutar; sonrasında yapılan sermaye artırımları burada henüz görünmez.' : ''}`),
     row('Toplam borç', isNum(st.totalDebt) ? bigMoney(st.totalDebt, fcur) : null, FUND_TEXT.totalDebt()),
     row('Borç/özsermaye', isNum(st.debtToEquity) ? num(st.debtToEquity / 100, 2) : null, isNum(st.debtToEquity) ? FUND_TEXT.debtToEquity(st.debtToEquity) : null),
     row('Cari oran', r2(st.currentRatio), isNum(st.currentRatio) ? FUND_TEXT.currentRatio(st.currentRatio) : null, st.currentRatio < 1 ? 'down' : ''),
@@ -505,8 +514,8 @@ function fundamentalsTab(ctx) {
     nextEd ? row('Sonraki bilanço', fmtDate(nextEd), `${daysUntil(nextEd) >= 0 ? `${daysUntil(nextEd)} gün sonra.` : ''}${isNum(cal['Earnings Average']) ? ` Hisse başına kâr beklentisi ${num(cal['Earnings Average'], 2)} (aralık ${num(cal['Earnings Low'], 2)} … ${num(cal['Earnings High'], 2)}).` : ''}${isNum(cal['Revenue Average']) ? ` Satış beklentisi ${bigMoney(cal['Revenue Average'], fcur)}.` : ''}`) : null,
     row('Temettü verimi', isNum(divY) ? pct(divY, { sign: false }) : null, isNum(divY) ? FUND_TEXT.dividendYield(divY) : null),
     isNum(st.payoutRatio) && st.payoutRatio > 0 ? row('Dağıtım oranı', pct(st.payoutRatio, { sign: false, digits: 0 }), FUND_TEXT.payoutRatio(st.payoutRatio)) : null,
-    cal['Ex-Dividend Date'] ? row('Hak kesim tarihi', fmtDate(String(cal['Ex-Dividend Date']).slice(0, 10))) : null,
-    st.lastSplitDate ? row('Son bölünme', `${st.lastSplitFactor || ''}`, `${fmtDate(st.lastSplitDate)} tarihinde.`) : null);
+    cal['Ex-Dividend Date'] ? row(String(cal['Ex-Dividend Date']).slice(0, 10) < todayISO() ? 'Son hak kesim tarihi' : 'Hak kesim tarihi', fmtDate(String(cal['Ex-Dividend Date']).slice(0, 10))) : null,
+    st.lastSplitDate && Date.now() / 1000 - st.lastSplitDate < 5 * 365 * 86400 ? row('Son bölünme', `${st.lastSplitFactor || ''}`, `${fmtDate(st.lastSplitDate)} tarihinde.`) : null);
 
   wrap.appendChild(h('div.fund-grid', valuation, profitability, balance, ownership, analysts, calendar));
   wrap.appendChild(h('p.hint', `Kaynak: Yahoo Finance, ${fmtDateTime(f.upd)} itibarıyla. Borsa İstanbul hisselerinde bazı oranlar eksik olabilir.`));
@@ -555,8 +564,8 @@ function statementsTab(ctx, redraw) {
     const revAll = (fin.rev || []).filter(isNum);
     const noRevenue = !revAll.length || revAll.every((v) => Math.abs(v) < 1e5);
     panels.push(noRevenue
-      ? panel('Ar-Ge gideri ve net kâr', 'satış geliri yok', fin.d, [{ name: 'Ar-Ge gideri', values: fin.rd || fin.opex || [] }, { name: 'Net kâr', values: fin.ni || [] }], { note: 'Henüz ürün satmayan şirketlerde zarar, büyük ölçüde araştırma-geliştirme harcamasından gelir.' })
-      : panel('Satış ve net kâr', null, fin.d, [{ name: 'Satış', values: fin.rev || [] }, { name: 'Net kâr', values: fin.ni || [] }]));
+      ? panel('Ar-Ge gideri ve net kâr', 'satış geliri yok', fin.d, [{ name: 'Ar-Ge gideri', values: fin.rd || fin.opex || [] }, { name: 'Net kâr/zarar', values: fin.ni || [] }], { note: 'Henüz ürün satmayan şirketlerde zarar, büyük ölçüde araştırma-geliştirme harcamasından gelir.' })
+      : panel('Satış ve net kâr', null, fin.d, [{ name: 'Satış', values: fin.rev || [] }, { name: 'Net kâr/zarar', values: fin.ni || [] }]));
   }
   if (bs) {
     const cfMap = new Map((cf?.d || []).map((d, i) => [d, cf.ocf?.[i]]));
