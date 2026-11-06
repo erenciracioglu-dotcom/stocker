@@ -7,6 +7,7 @@ import { renderPortfolio } from './views/portfolio.js';
 import { renderStock } from './views/stock.js';
 import { renderSettings } from './views/settings.js';
 import { importFromLink, importFile } from './views/dialogs.js';
+import { seedDemoIfNeeded } from './demo.js';
 
 const main = document.getElementById('main');
 let current = null;
@@ -159,6 +160,7 @@ async function boot() {
     console.warn(e);
     toast('Piyasa verisine ulaşılamadı; defterler maliyet değeriyle gösteriliyor.', { kind: 'error', ms: 6000 });
   }
+  try { await seedDemoIfNeeded(); } catch (e) { console.warn('Örnek defter kurulamadı', e); }
   updateStamp();
   render();
   window.addEventListener('hashchange', () => render());

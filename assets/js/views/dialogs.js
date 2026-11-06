@@ -262,6 +262,7 @@ export function openImportDialog(incoming, { source = 'dosya', onDone } = {}) {
       h('div', h('div.t', p.title), h('div.m', `${p.positions.length} hisse · ${p.currency} · ${fmtDate(p.updatedAt)}`)),
       h('span', { class: `badge ${status === 'older' ? 'warn' : ''}` }, STATUS[status])))),
     counts.older ? h('div.callout', icon('alert'), h('div.grow', `${counts.older} defterin bu cihazdaki hali daha yeni; birleştirmede korunur. Gelen sürümü zorla almak için "Hepsini üzerine yaz"ı seç.`)) : null,
+    store.list().some((p) => p.demo) ? h('p.hint', 'Örnek defter içe aktarınca kendiliğinden kalkar.') : null,
   );
   const finish = (mode) => {
     const r = store.applyImport(incoming, mode);
@@ -270,12 +271,13 @@ export function openImportDialog(incoming, { source = 'dosya', onDone } = {}) {
     if (r.added) parts.push(`${r.added} defter eklendi`);
     if (r.updated) parts.push(`${r.updated} güncellendi`);
     if (r.skipped) parts.push(`${r.skipped} değişmedi`);
+    if (r.demoRemoved) parts.push('örnek defter kaldırıldı');
     toast(parts.join(', ') || 'Değişiklik yok');
     onDone?.(r);
   };
   add(d.foot, 
-    store.list().length ? h('button.btn.danger.left', { type: 'button', onclick: async () => {
-      const ok = await confirmDialog('Tümünü değiştir', `Bu cihazdaki ${store.list().length} defter silinip yerine gelen ${incoming.length} defter konacak.`, { ok: 'Tümünü değiştir', danger: true });
+    store.real().length ? h('button.btn.danger.left', { type: 'button', onclick: async () => {
+      const ok = await confirmDialog('Tümünü değiştir', `Bu cihazdaki ${store.real().length} defter silinip yerine gelen ${incoming.length} defter konacak.`, { ok: 'Tümünü değiştir', danger: true });
       if (ok) finish('replace');
     } }, 'Tümünü değiştir') : null,
     counts.older ? h('button.btn', { type: 'button', onclick: () => finish('all') }, 'Hepsini üzerine yaz') : null,
@@ -340,8 +342,8 @@ export async function importFromLink(payload) {
 
 // ---------------------------------------------------------------- bağlantıyla taşıma
 
-export async function openTransferDialog(list = store.list()) {
-  if (!list.length) return toast('Taşınacak defter yok');
+export async function openTransferDialog(list = store.real()) {
+  if (!list.length) return toast(store.list().length ? 'Taşınacak defter yok; örnek defter taşınmaz' : 'Taşınacak defter yok');
   const d = dialogShell('Başka cihaza taşı');
   const link = await store.makeLink(list);
   const box = h('div.linkbox', link);

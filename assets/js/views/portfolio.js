@@ -1,10 +1,11 @@
 // Defter sayfası: özet, getiri grafiği (karşılaştırmalı), pozisyon tablosu, ağırlık ve sektör dağılımı.
-import { h, add, fill, icon, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
+import { h, add, fill, icon, toast, money, pct, price, num, fmtDate, fmtDateLong, trend, isNum, daysUntil, todayISO } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { valuePortfolio, plSeries, sectorAlloc, dayBefore } from '../calc.js';
 import { createChart, LWC, cssVar, devBar, segBar } from '../charts.js';
 import { openPortfolioDialog, openPositionDialog, openTransferDialog } from './dialogs.js';
+import { removeDemo } from '../demo.js';
 
 export const BENCHES = [
   { s: '^GSPC', n: 'S&P 500' },
@@ -59,8 +60,9 @@ export function renderPortfolio(id) {
     h('a.backlink', { href: '#/' }, icon('back', 16), 'Genel bakış'),
     h('header.ph',
       h('div.ph-top',
-        h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, p.kicker ? h('div.kicker', p.kicker) : null, h('h1', p.title)),
+        h('div', { style: { display: 'grid', gap: '4px', minWidth: 0 } }, p.kicker || p.demo ? h('div.kicker', p.kicker, p.demo ? h('span.badge.demo', 'Örnek') : null) : null, h('h1', p.title)),
         h('div.ph-actions',
+          p.demo ? h('button.btn.quiet', { type: 'button', onclick: () => { removeDemo(); toast('Örnek defter kaldırıldı'); location.hash = '#/'; } }, icon('trash', 16), 'Örneği kaldır') : null,
           h('button.btn.primary', { type: 'button', onclick: () => openPositionDialog({ portfolioId: p.id }) }, icon('plus', 16), 'Hisse ekle'),
           h('button.btn', { type: 'button', onclick: () => openPortfolioDialog(p) }, icon('edit', 16), 'Düzenle'),
           h('div.menu', menuBtn, menuList))),

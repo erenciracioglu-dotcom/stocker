@@ -125,7 +125,7 @@ export function rangeBar(min, max, marks = [], { fmt = (v) => num(v) } = {}) {
 }
 
 /** Bütünün parçaları: yüksek segmentli çubuk (≤ 6 parça), etiket sığarsa içine. */
-export function segBar(parts, { colors, fmt = (p) => pct(p.weight, { sign: false, digits: 0 }), label = 'Dağılım' } = {}) {
+export function segBar(parts, { colors, fmt = (p) => pct(p.weight, { sign: false, digits: p.weight < 0.1 ? 1 : 0 }), label = 'Dağılım' } = {}) {
   const wrap = h('div.segwrap');
   const bar = h('div.segbar', { role: 'img', 'aria-label': `${label}: ${parts.map((p) => `${p.name} ${fmt(p)}`).join(', ')}` });
   parts.forEach((p, i) => {

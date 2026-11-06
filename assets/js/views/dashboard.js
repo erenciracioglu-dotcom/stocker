@@ -1,10 +1,11 @@
 // Genel bakış: toplam değer, toplam kâr/zarar seyri, defter dizini, günün hareketleri, yaklaşan tarihler.
-import { h, fill, icon, money, pct, price, num, fmtDate, fmtTime, daysUntil, todayISO, trend, curSymbol, isNum, ago } from '../util.js';
+import { h, fill, icon, toast, money, pct, price, num, fmtDate, fmtTime, daysUntil, todayISO, trend, curSymbol, isNum, ago } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { valuePortfolio, totals, combinedPL, plSeries, spMap, dayBefore } from '../calc.js';
 import { createChart, LWC, cssVar, alpha, sparkline, devBar } from '../charts.js';
 import { openPortfolioDialog, pickFile, openPasteDialog, openTransferDialog, importFile } from './dialogs.js';
+import { removeDemo } from '../demo.js';
 
 export function renderDashboard() {
   const list = store.list();
@@ -16,8 +17,21 @@ export function renderDashboard() {
   }
   const st = store.settings();
   const market = data.getMarket();
+  // Gerçek defter varsa örnek defter toplamlara katılmaz
+  const hasDemo = list.some((p) => p.demo);
+  const counted = list.some((p) => !p.demo) ? list.filter((p) => !p.demo) : list;
 
   view.appendChild(marketStrip(market));
+
+  if (hasDemo) {
+    const onlyDemo = counted.every((p) => p.demo);
+    view.appendChild(h('div.callout.info', icon('info'), h('div.grow',
+      h('div', h('b', onlyDemo ? 'Gördüğün bir örnek defter. ' : 'Örnek defter toplamlara katılmıyor. '),
+        onlyDemo ? 'THYAO, ASELS ve ALARK\'tan kurulmuş bir sepetle Stocker\'ın neye benzediğini görebilirsin. Kendi defterlerini içe aktardığında örnek kendiliğinden kalkar.' : 'İstediğinde kaldırabilirsin; bir sonraki içe aktarmada da kendiliğinden kalkar.')),
+      h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+        onlyDemo ? h('button.btn.small.primary', { type: 'button', onclick: () => pickFile() }, icon('upload', 14), 'Defterlerimi getir') : null,
+        h('button.btn.small', { type: 'button', onclick: () => { removeDemo(); toast('Örnek defter kaldırıldı'); } }, 'Örneği kaldır'))));
+  }
 
   const missing = [...new Set(list.flatMap((p) => p.positions.map((x) => x.symbol)).filter((s) => market && !data.hasData(s)))];
   if (market && missing.length) {
@@ -29,7 +43,7 @@ export function renderDashboard() {
 
   // ---- toplam
   const cur = st.totalCur || 'TRY';
-  const t = totals(list, cur);
+  const t = totals(counted, cur);
   const curCtl = h('div.seg-ctl', { role: 'group', 'aria-label': 'Toplam para birimi' },
     ...['TRY', 'USD'].map((c) => h('button', { type: 'button', 'aria-pressed': String(c === cur), onclick: () => { store.setSetting('totalCur', c); window.dispatchEvent(new Event('stocker:rerender')); } }, c === 'TRY' ? 'TL' : 'USD')));
   const usdtry = data.fx('USD', 'TRY');
@@ -40,7 +54,7 @@ export function renderDashboard() {
       delta('Günlük', money(t.dayChg, cur, { sign: true }), pct(t.dayPct), trend(t.dayChg)),
       delta('Toplam kâr/zarar', money(t.pl, cur, { sign: true }), pct(t.plPct), trend(t.pl)),
       delta('Maliyet', money(t.cost, cur), null, 'flat')),
-    usdtry ? h('div.hint', `${list.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Günlük değişim her hissenin son seansına göredir; ABD piyasası kapalıyken dünkü seans görünür. Fiyatlar Yahoo Finance'ten, yarım saatte bir güncellenir; BIST verisi 15 dk gecikmelidir.`) : null,
+    usdtry ? h('div.hint', `${counted.some((p) => p.currency !== cur) ? `Diğer para birimindeki defterler güncel kurla çevrildi: 1 $ = ${money(usdtry, 'TRY', { digits: 2 })}.` : ''} Günlük değişim her hissenin son seansına göredir; ABD piyasası kapalıyken dünkü seans görünür. Fiyatlar Yahoo Finance'ten, yarım saatte bir güncellenir; BIST verisi 15 dk gecikmelidir.`) : null,
   );
 
   const chartBox = h('div.chart-box');
@@ -52,7 +66,7 @@ export function renderDashboard() {
   view.appendChild(h('div.grid-hero', hero, chartPanel));
 
   requestAnimationFrame(() => {
-    const s = combinedPL(list, cur);
+    const s = combinedPL(counted, cur);
     if (s.t.length < 2) { chartBox.appendChild(h('div.empty-chart', 'Seri için en az iki işlem günü gerekiyor.')); return; }
     const chart = createChart(chartBox, { priceDigits: 0 });
     const up = cssVar('--up'), down = cssVar('--down');
@@ -86,12 +100,12 @@ export function renderDashboard() {
       h('span.spacer'),
       h('button.btn.small', { type: 'button', onclick: () => openTransferDialog() }, icon('link', 15), 'Başka cihaza taşı'),
       h('button.btn.small', { type: 'button', onclick: () => pickFile() }, icon('upload', 15), 'İçe aktar'),
-      h('button.btn.small', { type: 'button', onclick: () => store.exportFile() }, icon('download', 15), 'Dışa aktar'),
+      h('button.btn.small', { type: 'button', onclick: () => { if (!store.real().length) return toast('Dışa aktarılacak defter yok; örnek defter dışa aktarılmaz'); store.exportFile(); } }, icon('download', 15), 'Dışa aktar'),
       h('button.btn.small.primary', { type: 'button', onclick: () => openPortfolioDialog(null, { onSaved: (p) => { location.hash = `#/p/${p.id}`; } }) }, icon('plus', 15), 'Yeni defter')),
     ledger));
 
   // ---- günün hareketleri + takvim
-  view.appendChild(h('div.grid-2', moversPanel(list), eventsPanel(list)));
+  view.appendChild(h('div.grid-2', moversPanel(counted), eventsPanel(counted)));
 
   return { el: view, cleanup: () => cleanups.forEach((f) => f()) };
 }
@@ -136,7 +150,7 @@ function ledgerRow(p) {
   const sp = s.t.length > 1 ? sparkline([0, ...s.pl], { w: 132, h: 34, color: p.accent, baseline: 0, stretch: true, label: `${p.title} kâr/zarar seyri` }) : h('span');
   return h('a.ledger-row', { href: `#/p/${p.id}`, style: { '--acc': p.accent } },
     h('span.spine'),
-    h('div', h('div.ledger-title', p.title), h('div.ledger-meta', h('span', p.kicker || cur), h('span', `${p.positions.length} hisse`), h('span.hide-sm', `${fmtDate(p.entryDate)}'den beri`))),
+    h('div', h('div.ledger-title', p.title, p.demo ? h('span.badge.demo', 'Örnek') : null), h('div.ledger-meta', h('span', p.kicker || cur), h('span', `${p.positions.length} hisse`), h('span.hide-sm', `${fmtDate(p.entryDate)}'den beri`))),
     h('div.cell.c-val', h('span.k', 'Değer'), h('span.v', money(v.total, cur)),
       h('span.v2.show-sm', h('span', { class: trend(v.pl) }, pct(v.plPct)), h('span.muted', ' toplam')),
       h('span.v2.show-sm', h('span', { class: trend(v.dayChg) }, pct(v.dayPct)), h('span.muted', ' günlük'))),
@@ -150,7 +164,7 @@ function moversPanel(list) {
   const seen = new Map();
   for (const p of list) for (const x of p.positions) {
     const q = data.quote(x.symbol);
-    if (q && isNum(q.p) && isNum(q.pc) && q.pc && !seen.has(x.symbol)) seen.set(x.symbol, { s: x.symbol, t: x.ticker, n: q.n || x.name, q, chg: q.p / q.pc - 1 });
+    if (q && isNum(q.p) && isNum(q.pc) && q.pc && !seen.has(x.symbol)) seen.set(x.symbol, { s: x.symbol, t: x.ticker, n: x.name && x.name !== x.ticker ? x.name : (q.n || x.name), q, chg: q.p / q.pc - 1 });
   }
   const all = [...seen.values()].sort((a, b) => b.chg - a.chg);
   const panel = h('section.panel', { 'aria-label': 'Günün hareketleri' },

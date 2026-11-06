@@ -12,6 +12,7 @@ Portföy defterlerini izlemek için tarayıcıda çalışan bir uygulama: canlı
 - **Defter sayfası:** değer, maliyet, kâr/zarar, nakit; başlangıçtan bu yana getirinin S&P 500, Nasdaq, XBI, BIST 100, dolar/TL ya da gram altınla karşılaştırması; sıralanabilir pozisyon tablosu (seans dışı fiyatlar dahil); ağırlık ve sektör dağılımı.
 - **Hisse sayfası:** çizgi ve mum grafik (1 günden 10 yıla), 20/50/200 günlük ortalamalar, Bollinger, hacim, RSI, MACD; teknik özet (ortalama ve osilatörlerin al/sat/nötr okuması), getiri ve risk (oynaklık, en büyük düşüş, beta, ATR), 52 haftalık aralık ve pivot seviyeleri; değerleme, kârlılık, bilanço, nakit yetme süresi, açığa satış, analist hedefleri ve not değişiklikleri; yıllık/çeyreklik mali tablolar, hisse sayısı (sulandırma), hisse başına kâr beklentisi; haberler ve şirket profili. Her göstergenin yanında ne anlama geldiği günlük dille yazar.
 - **Taşıma:** dışa aktarılan dosya önceki Stocker ile aynı biçimdedir (`stocker.portfolios`, şema 1). İçe aktarırken aynı defterin daha yeni sürümü eskisinin yerini alır. Ayrıca tüm defterleri tek bir bağlantıya sıkıştırıp telefona gönderebilirsin.
+- İlk açılışta, hiç defteri olmayan tarayıcıda THYAO, ASELS ve ALARK'tan kurulu bir **örnek defter** görünür. Dışa aktarmaya ve taşıma bağlantısına girmez, gerçek defter varken toplamlara katılmaz, ilk içe aktarmada kendiliğinden kalkar; Ayarlar'dan kaldırılıp yeniden eklenebilir.
 - Açık ve koyu tema, telefonda ana ekrana eklenebilir.
 
 ## Veri nasıl geliyor

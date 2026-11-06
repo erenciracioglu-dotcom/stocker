@@ -78,6 +78,9 @@ function persist() {
 }
 
 export function list() { return portfolios; }
+/** Örnek defter dışındaki defterler (dışa aktarma, taşıma ve toplamlar için). */
+export function real() { return portfolios.filter((p) => !p.demo); }
+export const isDemo = (p) => !!p?.demo;
 export function get(id) { return portfolios.find((p) => p.id === id) || null; }
 
 /** Değişen defteri kaydeder: revizyonu artırır, sermayeyi yeniden hesaplar. */
@@ -108,6 +111,14 @@ export function move(id, dir) {
   emit();
 }
 
+/** Örnek defteri revizyon artırmadan ekler. */
+export function addDemo(p) {
+  portfolios = portfolios.filter((x) => x.id !== p.id);
+  portfolios.unshift(normPortfolio(p));
+  persist();
+  emit();
+}
+
 export function clearAll() {
   portfolios = [];
   persist();
@@ -125,11 +136,11 @@ export function newPortfolio(currency = 'USD') {
 
 // ---------------------------------------------------------------- dışa / içe aktarma
 
-export function exportObject(list = portfolios) {
+export function exportObject(list = real()) {
   return { format: FORMAT, schemaVersion: 1, exportedAt: new Date().toISOString(), portfolios: JSON.parse(JSON.stringify(list)) };
 }
 
-export function exportFile(list = portfolios) {
+export function exportFile(list = real()) {
   download(`portfoylerim-${todayISO()}.json`, JSON.stringify(exportObject(list), null, 2));
   setSetting('lastBackup', new Date().toISOString());
 }
@@ -173,7 +184,13 @@ export function planImport(incoming) {
 
 /** mode: 'merge' yeni ve daha yeni olanları alır; 'replace' tüm listeyi gelenle değiştirir; 'all' eskileri de üzerine yazar. */
 export function applyImport(incoming, mode = 'merge') {
-  let added = 0, updated = 0, skipped = 0;
+  let added = 0, updated = 0, skipped = 0, demoRemoved = 0;
+  // İlk gerçek içe aktarmada örnek defter kendiliğinden kalkar
+  if (incoming.some((p) => !p.demo)) {
+    const before = portfolios.length;
+    portfolios = portfolios.filter((p) => !p.demo);
+    demoRemoved = before - portfolios.length;
+  }
   if (mode === 'replace') {
     portfolios = incoming.map(normPortfolio);
     added = portfolios.length;
@@ -186,7 +203,7 @@ export function applyImport(incoming, mode = 'merge') {
   }
   persist();
   emit();
-  return { added, updated, skipped };
+  return { added, updated, skipped, demoRemoved };
 }
 
 // ---------------------------------------------------------------- bağlantıyla taşıma (veri yalnız # sonrasında; sunucuya gitmez)
@@ -227,7 +244,7 @@ export async function decodePayload(str) {
   return JSON.parse(new TextDecoder().decode(bytes));
 }
 
-export async function makeLink(list = portfolios) {
+export async function makeLink(list = real()) {
   const payload = await encodePayload(exportObject(list));
   const base = location.href.split('#')[0];
   return `${base}#/al?d=${payload}`;

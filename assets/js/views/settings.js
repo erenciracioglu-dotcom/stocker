@@ -3,6 +3,7 @@ import { h, add, icon, toast, fmtDateTime, ago, fmtDate } from '../util.js';
 import * as store from '../store.js';
 import * as data from '../data.js';
 import { pickFile, openPasteDialog, openTransferDialog, confirmDialog, ghAddSymbols, importFile } from './dialogs.js';
+import { restoreDemo, removeDemo } from '../demo.js';
 
 export function renderSettings() {
   const view = h('div.view');
@@ -27,10 +28,10 @@ export function renderSettings() {
     h('div.panel-head', h('h2', 'Cihazlar arasında taşıma')),
     h('div.setting-row',
       h('div', h('div.t', 'Bağlantıyla taşı'), h('div.d', 'Tüm defterler sıkıştırılıp tek bir bağlantıya konur. Kendine WhatsApp ya da e-postayla gönder, diğer cihazda aç.')),
-      h('button.btn.primary', { type: 'button', disabled: !list.length, onclick: () => openTransferDialog() }, icon('link', 16), 'Bağlantı oluştur')),
+      h('button.btn.primary', { type: 'button', disabled: !store.real().length, onclick: () => openTransferDialog() }, icon('link', 16), 'Bağlantı oluştur')),
     h('div.setting-row',
       h('div', h('div.t', 'Dosyaya aktar'), h('div.d', `portfoylerim-tarih.json olarak iner.${st.lastBackup ? ` Son dışa aktarma: ${fmtDateTime(st.lastBackup)}.` : ''}`)),
-      h('button.btn', { type: 'button', disabled: !list.length, onclick: () => { store.exportFile(); toast('Dosya indirildi'); } }, icon('download', 16), 'Dışa aktar')),
+      h('button.btn', { type: 'button', disabled: !store.real().length, onclick: () => { store.exportFile(); toast('Dosya indirildi'); } }, icon('download', 16), 'Dışa aktar')),
     h('div', { style: { paddingTop: '12px' } }, drop));
 
   // ---- görünüm
@@ -43,7 +44,11 @@ export function renderSettings() {
     h('div.setting-row', h('div', h('div.t', 'Sayı biçimi'), h('div.d', 'Türkçe: 1.234,56 · İngilizce: 1,234.56')),
       seg('numLocale', [['tr-TR', 'Türkçe'], ['en-US', 'İngilizce']])),
     h('div.setting-row', h('div', h('div.t', 'Toplamın para birimi'), h('div.d', 'Genel bakıştaki toplam değer ve kâr/zarar.')),
-      seg('totalCur', [['TRY', 'TL'], ['USD', 'USD']])));
+      seg('totalCur', [['TRY', 'TL'], ['USD', 'USD']])),
+    h('div.setting-row', h('div', h('div.t', 'Örnek defter'), h('div.d', 'THYAO, ASELS ve ALARK\'tan kurulu deneme defteri. Dışa aktarmaya ve taşımaya girmez, gerçek defter varken toplamlara katılmaz.')),
+      list.some((p) => p.demo)
+        ? h('button.btn', { type: 'button', onclick: () => { removeDemo(); toast('Örnek defter kaldırıldı'); } }, 'Örneği kaldır')
+        : h('button.btn', { type: 'button', onclick: async () => { try { await restoreDemo(); toast('Örnek defter eklendi'); } catch { toast('Örnek defter için veri alınamadı', { kind: 'error' }); } } }, icon('plus', 16), 'Örneği ekle')));
 
   // ---- veri
   const { owner, repo } = st.gh;

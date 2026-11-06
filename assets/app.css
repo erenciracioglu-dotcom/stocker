@@ -308,6 +308,7 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 18px 20px 64px; }
 .tbl .act { width: 1%; }
 .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 560; padding: 1px 7px; border-radius: 999px; background: var(--wash); color: var(--ink-2); }
 .badge.warn { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.badge.demo { background: transparent; border: 1px solid var(--rule-strong); color: var(--ink-2); margin-left: 8px; vertical-align: 2px; font-stretch: 100%; letter-spacing: 0; }
 
 .weights { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
 .weights li { display: grid; grid-template-columns: 74px 1fr 52px; gap: 10px; align-items: center; font-size: 13.5px; }
@@ -427,11 +428,11 @@ main { max-width: var(--maxw); margin: 0 auto; padding: 18px 20px 64px; }
 .empty .row { display: flex; gap: 10px; flex-wrap: wrap; }
 .drop { border: 1.5px dashed var(--rule-strong); border-radius: var(--r-l); padding: 22px; display: grid; gap: 8px; justify-items: start; background: color-mix(in srgb, var(--paper) 70%, transparent); width: 100%; }
 .drop.over { border-color: var(--focus); background: color-mix(in srgb, var(--focus) 6%, var(--paper)); }
-.callout { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-m); background: color-mix(in srgb, var(--warn) 10%, var(--paper)); border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--rule)); font-size: 14px; }
-.callout .icon { color: var(--warn); flex-shrink: 0; margin-top: 2px; }
-.callout .grow { flex: 1; display: grid; gap: 6px; }
+.callout { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-start; padding: 12px 14px; border-radius: var(--r-m); background: color-mix(in srgb, var(--warn) 10%, var(--paper)); border: 1px solid color-mix(in srgb, var(--warn) 30%, var(--rule)); font-size: 14px; }
+.callout > .icon { color: var(--warn); flex-shrink: 0; margin-top: 2px; }
+.callout .grow { flex: 1 1 260px; min-width: 0; display: grid; gap: 6px; }
 .callout.info { background: var(--paper); border-color: var(--rule); }
-.callout.info .icon { color: var(--ink-2); }
+.callout.info > .icon { color: var(--ink-2); }
 
 /* ---------------------------------------------------------------- formlar ve diyalog */
 
