@@ -39,6 +39,7 @@ UTC = dt.timezone.utc
 SPARK_DAYS = 130            # market.json içindeki kapanış serisi (~6 ay)
 FULL_EVERY = dt.timedelta(days=7)
 WATCH_EVERY = dt.timedelta(hours=3)
+CORE_EVERY = dt.timedelta(minutes=110)  # portföy ve endeks günlük geçmişi; gün içi fiyat her çalıştırmada
 FUND_EVERY = {"P": dt.timedelta(hours=20), "B": dt.timedelta(hours=20), "W": dt.timedelta(hours=70)}
 
 
@@ -274,10 +275,10 @@ def fetch_daily(sym, group, out: Path, full_all: bool, stats: dict):
     path = out / "history" / f"{safe_name(sym)}.json"
     old = load_json(path)
     t0 = now()
-    if old and group == "W" and not full_all:
+    if old and not full_all:
         upd = parse_iso(old.get("upd", ""))
-        if upd and t0 - upd < WATCH_EVERY:
-            return old, False  # izleme listesi: yeterince taze
+        if upd and t0 - upd < (WATCH_EVERY if group == "W" else CORE_EVERY):
+            return old, False  # yeterince taze; günün mumu gün içi veriden tamamlanır
     need_full = full_all or not old or not old.get("t")
     if not need_full:
         fa = parse_iso(old.get("full", ""))
@@ -350,6 +351,37 @@ def tod_minutes(epoch, tz):
     return ts.hour * 60 + ts.minute
 
 
+def session_today(intra, tz, reg):
+    """Gün içi mumlardan son seansın açılış/yüksek/düşük/hacmi (yalnız normal seans)."""
+    t, o, h, l, c, v = (intra.get(k) or [] for k in "tohlcv")
+    if not t:
+        return None
+    rs = re_ = None
+    if reg:
+        rs, re_ = tod_minutes(reg[0], tz), tod_minutes(reg[1], tz)
+    day = local_date(t[-1], tz)
+    rows = []
+    for i in range(len(t)):
+        if local_date(t[i], tz) != day:
+            continue
+        if rs is not None:
+            m = tod_minutes(t[i], tz)
+            if m < rs or m >= re_:
+                continue
+        if c[i] is None:
+            continue
+        rows.append(i)
+    if not rows:
+        return None
+    return {
+        "d": day,
+        "o": o[rows[0]],
+        "h": max(h[i] for i in rows if h[i] is not None),
+        "l": min(l[i] for i in rows if l[i] is not None),
+        "v": sum(v[i] or 0 for i in rows),
+    }
+
+
 def build_quote(sym, group, hist, intra, now_ts):
     t, c = hist.get("t") or [], hist.get("c") or []
     if not c:
@@ -372,6 +404,16 @@ def build_quote(sym, group, hist, intra, now_ts):
             pc, p, d = (pcl or c[i]), rmp, rd
             o = h = l = None
             v = 0
+    if intra and intra.get("t"):
+        try:
+            ses = session_today(intra, tz, m.get("reg"))
+        except Exception:
+            ses = None
+        if ses and ses["d"] >= d and ses["d"] == (local_date(rmt, tz) if rmt else ses["d"]):
+            if ses["d"] > d:
+                pc = pcl or c[i]
+            d, o, h, l = ses["d"], ses["o"], ses["h"], ses["l"]
+            v = max(v or 0, ses["v"]) if ses["d"] == t[i] else ses["v"]
     q = {
         "g": group,
         "n": m.get("n"),
@@ -405,10 +447,17 @@ def build_quote(sym, group, hist, intra, now_ts):
                 q.update({"xs": xs, "xp": lc, "xt": lt})
         except Exception:
             pass
+    st, sc = list(t[-SPARK_DAYS:]), list(c[-SPARK_DAYS:])
+    if p is not None and d:
+        if st and d == st[-1]:
+            sc[-1] = p
+        elif not st or d > st[-1]:
+            st.append(d); sc.append(p)
+            st, sc = st[-SPARK_DAYS:], sc[-SPARK_DAYS:]
     if group in ("P", "B"):
-        q["sp"] = {"t": t[-SPARK_DAYS:], "c": c[-SPARK_DAYS:]}
+        q["sp"] = {"t": st, "c": sc}
     else:  # izleme listesi: yalnız küçük çizgi grafik için son 30 kapanış
-        q["sp"] = {"c": c[-30:]}
+        q["sp"] = {"c": sc[-30:]}
     return {k: v for k, v in q.items() if v is not None}
 
 
